@@ -1,28 +1,28 @@
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, AlertTriangle, ThumbsUp, BarChart2 } from "lucide-react";
+import { ArrowRight, BarChart2, Loader2 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { motion } from "framer-motion";
 
-// Mock analysis function
-const mockAnalyzeSentiment = (text: string): Promise<any> => {
+// Mock sentiment analysis function (in a real app, this would call an API)
+const analyzeSentiment = (text: string): Promise<{
+  sentiment: "positive" | "neutral" | "negative";
+  score: number;
+  keywords: Array<{ word: string; sentiment: "positive" | "neutral" | "negative" }>;
+}> => {
   return new Promise((resolve) => {
+    // Simulate API call delay
     setTimeout(() => {
-      // Simple sentiment analysis logic (for demo purposes)
-      const lowercaseText = text.toLowerCase();
-      const words = lowercaseText.split(/\s+/);
+      // Simple sentiment analysis based on keywords
+      const positiveWords = ["great", "excellent", "good", "love", "perfect", "amazing", "helpful", "satisfied"];
+      const negativeWords = ["bad", "poor", "terrible", "hate", "awful", "disappointed", "frustrated", "useless"];
       
-      const positiveWords = ["good", "great", "excellent", "amazing", "love", "perfect", "happy", "satisfied", "best", "recommended"];
-      const negativeWords = ["bad", "terrible", "horrible", "poor", "disappointed", "waste", "worst", "awful", "hate", "problem"];
-      
+      const words = text.toLowerCase().split(/\s+/);
       let positiveCount = 0;
       let negativeCount = 0;
       
@@ -31,158 +31,104 @@ const mockAnalyzeSentiment = (text: string): Promise<any> => {
         if (negativeWords.includes(word)) negativeCount++;
       });
       
-      const totalWords = words.length;
-      const neutralCount = totalWords - positiveCount - negativeCount;
-      
-      let sentiment = "neutral";
+      let sentiment: "positive" | "neutral" | "negative" = "neutral";
       let score = 0.5;
       
       if (positiveCount > negativeCount) {
         sentiment = "positive";
-        score = 0.5 + (positiveCount / totalWords) * 0.5;
+        score = 0.5 + (positiveCount / (positiveCount + negativeCount + 1)) * 0.5;
       } else if (negativeCount > positiveCount) {
         sentiment = "negative";
-        score = 0.5 - (negativeCount / totalWords) * 0.5;
+        score = 0.5 - (negativeCount / (positiveCount + negativeCount + 1)) * 0.5;
       }
       
-      // Extract top keywords (simple implementation for demo)
-      const wordFreq: Record<string, number> = {};
-      words.forEach(word => {
-        if (word.length > 3) { // Only count words longer than 3 chars
-          wordFreq[word] = (wordFreq[word] || 0) + 1;
-        }
-      });
-      
-      const keywords = Object.entries(wordFreq)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([word, count]) => ({
+      // Extract keywords
+      const keywords = words
+        .filter(word => positiveWords.includes(word) || negativeWords.includes(word))
+        .map(word => ({
           word,
-          count,
-          sentiment: positiveWords.includes(word) 
-            ? "positive" 
-            : negativeWords.includes(word) 
-              ? "negative" 
-              : "neutral"
-        }));
+          sentiment: positiveWords.includes(word) ? "positive" : "negative" as "positive" | "neutral" | "negative"
+        }))
+        .slice(0, 5); // Top 5 keywords
       
-      resolve({
-        sentiment,
-        score,
-        analysis: {
-          positive: {
-            count: positiveCount,
-            percentage: Math.round((positiveCount / totalWords) * 100)
-          },
-          neutral: {
-            count: neutralCount,
-            percentage: Math.round((neutralCount / totalWords) * 100)
-          },
-          negative: {
-            count: negativeCount,
-            percentage: Math.round((negativeCount / totalWords) * 100)
-          }
-        },
-        keywords
-      });
-    }, 1500); // Simulate API delay
+      resolve({ sentiment, score, keywords });
+    }, 1500); // 1.5 seconds delay to simulate API call
   });
 };
 
-const exampleReviews = [
-  "The product exceeded all my expectations. The quality is outstanding and the customer service was incredibly helpful when I had questions.",
-  "Decent product overall, but the delivery took longer than expected. The packaging was nice though.",
-  "I'm extremely disappointed with my purchase. The item arrived damaged and customer service has been unresponsive to my complaints."
-];
-
 const Analyzer = () => {
-  const { toast } = useToast();
   const [reviewText, setReviewText] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [fileUploading, setFileUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{
+    sentiment: "positive" | "neutral" | "negative";
+    score: number;
+    keywords: Array<{ word: string; sentiment: "positive" | "neutral" | "negative" }>;
+  } | null>(null);
+  const [recentAnalyses, setRecentAnalyses] = useState<Array<{
+    id: number;
+    text: string;
+    sentiment: "positive" | "neutral" | "negative";
+    score: number;
+    timestamp: Date;
+  }>>([]);
 
   const handleAnalyze = async () => {
     if (!reviewText.trim()) {
       toast({
         title: "Empty review",
-        description: "Please enter a review to analyze",
+        description: "Please enter a review to analyze.",
         variant: "destructive",
       });
       return;
     }
-
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-
+    
+    setLoading(true);
     try {
-      const result = await mockAnalyzeSentiment(reviewText);
-      setAnalysisResult(result);
+      const sentimentResult = await analyzeSentiment(reviewText);
+      setResult(sentimentResult);
+      
+      // Add to recent analyses
+      setRecentAnalyses(prev => [
+        {
+          id: Date.now(),
+          text: reviewText,
+          sentiment: sentimentResult.sentiment,
+          score: sentimentResult.score,
+          timestamp: new Date()
+        },
+        ...prev.slice(0, 4) // Keep only 5 recent analyses
+      ]);
+      
+      toast({
+        title: "Analysis complete",
+        description: `Review sentiment: ${sentimentResult.sentiment}`,
+      });
     } catch (error) {
+      console.error("Error analyzing sentiment:", error);
       toast({
         title: "Analysis failed",
-        description: "There was an error analyzing the review",
+        description: "Sorry, we couldn't analyze your review. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsAnalyzing(false);
+      setLoading(false);
     }
   };
 
-  const handleFileUpload = () => {
-    setFileUploading(true);
-    setUploadProgress(0);
-    
-    // Simulate file upload progress
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        const newProgress = prev + 20;
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setFileUploading(false);
-          toast({
-            title: "Upload complete",
-            description: "Your file has been uploaded successfully",
-          });
-          return 100;
-        }
-        return newProgress;
-      });
-    }, 500);
-  };
-
-  const handleExampleClick = (example: string) => {
-    setReviewText(example);
-  };
-
-  const getSentimentIcon = () => {
-    if (!analysisResult) return null;
-    
-    switch (analysisResult.sentiment) {
-      case "positive":
-        return <ThumbsUp className="w-12 h-12 text-green-500" />;
-      case "negative":
-        return <AlertTriangle className="w-12 h-12 text-red-500" />;
-      default:
-        return <BarChart2 className="w-12 h-12 text-blue-500" />;
-    }
-  };
-
-  const getSentimentColor = (sentiment: string) => {
+  const getSentimentColor = (sentiment: "positive" | "neutral" | "negative") => {
     switch (sentiment) {
       case "positive":
-        return "bg-green-500";
+        return "#34D399"; // green
       case "neutral":
-        return "bg-blue-500";
+        return "#60A5FA"; // blue
       case "negative":
-        return "bg-red-500";
+        return "#F87171"; // red
       default:
-        return "bg-gray-500";
+        return "#60A5FA"; // blue
     }
   };
 
-  const getSentimentBadge = (sentiment: string) => {
+  const getSentimentBadge = (sentiment: "positive" | "neutral" | "negative") => {
     switch (sentiment) {
       case "positive":
         return (
@@ -202,258 +148,203 @@ const Analyzer = () => {
             Negative
           </Badge>
         );
-      default:
-        return null;
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Sentiment Analyzer</h1>
-        <p className="text-muted-foreground mb-8">
-          Analyze customer reviews to determine sentiment and extract valuable insights
+    <div className="container mx-auto px-4 py-8 fade-in">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Sentiment Analyzer</h1>
+        <p className="text-muted-foreground mt-2">
+          Analyze the sentiment of customer reviews in real-time
         </p>
+      </div>
 
-        <Tabs defaultValue="analyze" className="w-full">
-          <TabsList className="w-full max-w-md mb-6">
-            <TabsTrigger value="analyze" className="flex-1">Analyze Text</TabsTrigger>
-            <TabsTrigger value="upload" className="flex-1">Upload File</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="analyze" className="mt-0">
-            <Card className="mb-6 card-glass">
-              <CardHeader>
-                <CardTitle>Analyze Customer Review</CardTitle>
-                <CardDescription>
-                  Enter a review text to analyze its sentiment
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="review">Review Text</Label>
-                    <Textarea
-                      id="review"
-                      placeholder="Enter the customer review text here..."
-                      value={reviewText}
-                      onChange={(e) => setReviewText(e.target.value)}
-                      className="min-h-[150px] mt-2"
-                    />
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <div className="flex-1">
-                      <Button 
-                        onClick={handleAnalyze} 
-                        disabled={isAnalyzing || !reviewText.trim()}
-                        className="w-full"
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Analyzing...
-                          </>
-                        ) : (
-                          "Analyze Sentiment"
-                        )}
-                      </Button>
-                    </div>
-                    <div className="flex-1">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setReviewText("")}
-                        disabled={isAnalyzing || !reviewText.trim()}
-                        className="w-full"
-                      >
-                        Clear
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="mb-8">
-              <h3 className="text-sm font-medium mb-2">Try these examples:</h3>
-              <div className="flex flex-col gap-2">
-                {exampleReviews.map((review, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="justify-start h-auto text-left p-3"
-                    onClick={() => handleExampleClick(review)}
-                  >
-                    <span className="text-xs font-normal line-clamp-1">
-                      {review}
-                    </span>
-                  </Button>
-                ))}
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2 animate-fade-in">
+          <CardHeader>
+            <CardTitle>Analyze a Review</CardTitle>
+            <CardDescription>
+              Enter a product review to analyze its sentiment
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Enter a product review here... (e.g. 'I love this product, it's amazing!')"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                className="min-h-32 resize-none"
+              />
+              <Button 
+                onClick={handleAnalyze} 
+                disabled={loading || !reviewText.trim()}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    Analyze Sentiment
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </div>
-            
-            {analysisResult && (
-              <motion.div
+
+            {result && (
+              <motion.div 
+                className="mt-6 space-y-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <Card className="card-glass">
-                  <CardHeader>
-                    <CardTitle>Analysis Results</CardTitle>
-                    <CardDescription>
-                      Sentiment analysis of the provided review
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="mb-4">
-                          {getSentimentIcon()}
-                        </div>
-                        <h3 className="text-2xl font-bold mb-2 capitalize">
-                          {analysisResult.sentiment} Sentiment
-                        </h3>
-                        <div className="w-full max-w-xs">
-                          <div className="h-4 rounded-full bg-gray-100 overflow-hidden">
-                            <div
-                              className={`h-full ${getSentimentColor(analysisResult.sentiment)}`}
-                              style={{ width: `${analysisResult.score * 100}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between mt-1 text-xs text-muted-foreground">
-                            <span>Negative</span>
-                            <span>Neutral</span>
-                            <span>Positive</span>
-                          </div>
-                        </div>
-                        <p className="mt-4 text-sm text-center text-muted-foreground">
-                          Confidence Score: {(analysisResult.score * 100).toFixed(0)}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4">Detailed Analysis</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Positive Elements</span>
-                              <span>{analysisResult.analysis.positive.percentage}%</span>
-                            </div>
-                            <Progress 
-                              value={analysisResult.analysis.positive.percentage} 
-                              className="h-2"
-                              indicatorClassName="bg-sentiment-positive" 
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {analysisResult.analysis.positive.count} positive elements detected
-                            </p>
-                          </div>
-                          
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Neutral Elements</span>
-                              <span>{analysisResult.analysis.neutral.percentage}%</span>
-                            </div>
-                            <Progress 
-                              value={analysisResult.analysis.neutral.percentage} 
-                              className="h-2"
-                              indicatorClassName="bg-sentiment-neutral"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {analysisResult.analysis.neutral.count} neutral elements detected
-                            </p>
-                          </div>
-                          
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Negative Elements</span>
-                              <span>{analysisResult.analysis.negative.percentage}%</span>
-                            </div>
-                            <Progress 
-                              value={analysisResult.analysis.negative.percentage} 
-                              className="h-2"
-                              indicatorClassName="bg-sentiment-negative"
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {analysisResult.analysis.negative.count} negative elements detected
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {analysisResult.keywords.length > 0 && (
-                          <div className="mt-6">
-                            <h4 className="text-sm font-semibold mb-3">Key Phrases</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {analysisResult.keywords.map((keyword: any, index: number) => (
-                                <div key={index} className="flex items-center gap-2 border rounded-lg px-3 py-1.5">
-                                  <span className="text-sm">{keyword.word}</span>
-                                  {getSentimentBadge(keyword.sentiment)}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="upload" className="mt-0">
-            <Card className="card-glass">
-              <CardHeader>
-                <CardTitle>Upload Reviews File</CardTitle>
-                <CardDescription>
-                  Upload a CSV or Excel file containing customer reviews
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="border-2 border-dashed border-muted rounded-lg p-10 text-center">
-                    <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Drag and drop your file</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Support for CSV, XLSX, or TXT files
-                    </p>
-                    <Button onClick={handleFileUpload} disabled={fileUploading}>
-                      {fileUploading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        "Select File"
-                      )}
-                    </Button>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Analysis Result</h3>
+                  {getSentimentBadge(result.sentiment)}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Negative</span>
+                    <span>Neutral</span>
+                    <span>Positive</span>
                   </div>
-                  
-                  {fileUploading && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Uploading file...</span>
-                        <span>{uploadProgress}%</span>
-                      </div>
-                      <Progress value={uploadProgress} className="h-2" />
-                    </div>
-                  )}
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">File Requirements:</h3>
-                    <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
-                      <li>File should contain a column with review text</li>
-                      <li>Maximum file size: 10MB</li>
-                      <li>Supported formats: CSV, XLSX, TXT</li>
-                      <li>For CSV files, ensure reviews are properly comma-separated</li>
-                    </ul>
+                  <div className="relative h-2 w-full bg-gray-200 rounded-full">
+                    <div 
+                      className="absolute h-4 w-4 rounded-full bg-white border-2 transform -translate-y-1/4"
+                      style={{ 
+                        left: `${result.score * 100}%`, 
+                        borderColor: getSentimentColor(result.sentiment)
+                      }}
+                    />
+                  </div>
+                  <div className="text-sm text-center mt-1">
+                    Sentiment Score: {Math.round(result.score * 100)}%
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                
+                {result.keywords.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium mb-2">Key Sentiment Words</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {result.keywords.map((keyword, index) => (
+                        <Badge 
+                          key={index}
+                          className={`
+                            ${keyword.sentiment === 'positive' ? 'bg-green-100 text-green-800' : 
+                              keyword.sentiment === 'negative' ? 'bg-red-100 text-red-800' : 
+                              'bg-blue-100 text-blue-800'}
+                          `}
+                        >
+                          {keyword.word}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle>Recent Analyses</CardTitle>
+            <CardDescription>
+              Your most recent sentiment analyses
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentAnalyses.length > 0 ? (
+              <div className="space-y-4">
+                {recentAnalyses.map((analysis) => (
+                  <div key={analysis.id} className="p-3 rounded-lg border">
+                    <div className="flex justify-between items-start mb-2">
+                      {getSentimentBadge(analysis.sentiment)}
+                      <span className="text-xs text-muted-foreground">
+                        {analysis.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-sm mb-2 line-clamp-2">{analysis.text}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Score:
+                      </span>
+                      <Progress
+                        value={analysis.score * 100}
+                        className="h-1.5 w-24"
+                        indicatorClassName={`bg-${
+                          analysis.sentiment === "positive"
+                            ? "green-500"
+                            : analysis.sentiment === "neutral"
+                            ? "blue-500"
+                            : "red-500"
+                        }`}
+                      />
+                      <span className="text-xs font-medium">
+                        {Math.round(analysis.score * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <BarChart2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">
+                  No analyses yet. Try analyzing a review!
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      <Card className="mt-6 animate-fade-in">
+        <CardHeader>
+          <CardTitle>How It Works</CardTitle>
+          <CardDescription>
+            Understanding our sentiment analysis process
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-700 font-bold">1</span>
+              </div>
+              <h3 className="font-semibold">Input</h3>
+              <p className="text-sm text-muted-foreground">
+                Enter any customer review or feedback text into the analyzer
+              </p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-700 font-bold">2</span>
+              </div>
+              <h3 className="font-semibold">Analysis</h3>
+              <p className="text-sm text-muted-foreground">
+                Our algorithm identifies sentiment indicators and key phrases
+              </p>
+            </div>
+            
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-700 font-bold">3</span>
+              </div>
+              <h3 className="font-semibold">Results</h3>
+              <p className="text-sm text-muted-foreground">
+                Get instant sentiment classification and key insights from the text
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
