@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BarChart2, LineChart, Upload, Loader2, FileText, Check, Info } from "lucide-react";
+import { ArrowRight, BarChart2, LineChart, Upload, Loader2, FileText, Check, Info, AlertCircle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { validateCSV, extractTimeSeriesData } from "@/utils/csvValidator";
 
 // Mock data for visualization example
 const mockTimeSeriesData = {
@@ -45,11 +47,16 @@ const Analyzer = () => {
   const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData | null>(null);
   const [selectedModel, setSelectedModel] = useState("auto");
   const [forecasting, setForecasting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [csvPreview, setCsvPreview] = useState<string | null>(null);
 
   // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Reset previous errors
+    setValidationErrors([]);
 
     // Check file type
     if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
@@ -77,31 +84,55 @@ const Analyzer = () => {
           const content = e.target?.result as string;
           setCsvContent(content);
           
-          // Generate mock dataset info
-          const mockInfo: DatasetInfo = {
-            name: file.name,
-            description: "Time series dataset",
-            rows: Math.floor(Math.random() * 1000) + 500,
-            columns: Math.floor(Math.random() * 10) + 3,
-            timeRange: "Jan 2023 - Dec 2023",
-            dataType: "Numeric, Time Series",
-            uploadDate: new Date()
-          };
+          // Set a preview of the CSV for the user to see
+          const lines = content.split('\n');
+          const preview = lines.slice(0, Math.min(5, lines.length)).join('\n');
+          setCsvPreview(preview);
           
-          setDatasetInfo(mockInfo);
+          // Validate the CSV
+          const validationResult = validateCSV(content);
           
-          // Set mock time series data for visualization
-          setTimeSeriesData(mockTimeSeriesData);
-          
-          // Complete upload
-          setTimeout(() => {
-            setIsUploading(false);
-            setActiveTab("visualize");
-            toast({
-              title: "Upload successful",
-              description: `File "${file.name}" has been uploaded.`,
-            });
-          }, 500);
+          if (validationResult.isValid && validationResult.data) {
+            // Extract time series data
+            const extractedData = extractTimeSeriesData(validationResult);
+            
+            if (extractedData) {
+              // Generate dataset info
+              const mockInfo: DatasetInfo = {
+                name: file.name,
+                description: `Time series dataset with ${validationResult.data.valueColumns.length} value column(s)`,
+                rows: validationResult.data.rows.length,
+                columns: validationResult.data.headers.length,
+                timeRange: `${extractedData.labels[0]} - ${extractedData.labels[extractedData.labels.length - 1]}`,
+                dataType: "Numeric, Time Series",
+                uploadDate: new Date()
+              };
+              
+              setDatasetInfo(mockInfo);
+              
+              // Set time series data for visualization
+              setTimeSeriesData({
+                labels: extractedData.labels,
+                values: extractedData.values,
+                forecast: mockTimeSeriesData.forecast,
+                forecastLabels: mockTimeSeriesData.forecastLabels
+              });
+              
+              // Complete upload
+              setTimeout(() => {
+                setIsUploading(false);
+                setActiveTab("visualize");
+                toast({
+                  title: "Upload successful",
+                  description: `File "${file.name}" has been uploaded and validated.`,
+                });
+              }, 500);
+            } else {
+              handleValidationError(["Could not extract time series data from the CSV file."]);
+            }
+          } else {
+            handleValidationError(validationResult.errors);
+          }
         };
         
         reader.readAsText(file);
@@ -109,8 +140,22 @@ const Analyzer = () => {
     }, 200);
   };
 
+  // Handle validation errors
+  const handleValidationError = (errors: string[]) => {
+    setValidationErrors(errors);
+    setIsUploading(false);
+    toast({
+      title: "Validation Error",
+      description: "The CSV file has validation issues. Please check the details below.",
+      variant: "destructive",
+    });
+  };
+
   // Handle sample data generation
   const handleUseSampleData = () => {
+    // Reset previous errors
+    setValidationErrors([]);
+    
     setIsUploading(true);
     setUploadProgress(0);
     
@@ -125,6 +170,7 @@ const Analyzer = () => {
         // Generate sample CSV content
         const sampleCsv = "date,value\n2023-01,65\n2023-02,59\n2023-03,80\n2023-04,81\n2023-05,56\n2023-06,55\n2023-07,40\n2023-08,45\n2023-09,60\n2023-10,70\n2023-11,75\n2023-12,78";
         setCsvContent(sampleCsv);
+        setCsvPreview(sampleCsv);
         
         // Set mock dataset info
         const mockInfo: DatasetInfo = {
@@ -209,26 +255,49 @@ const Analyzer = () => {
               </CardHeader>
               <CardContent>
                 {!isUploading ? (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Supports CSV files with time series data. Make sure your data includes a date/time column.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <Button onClick={() => document.getElementById('file-upload')?.click()}>
-                        <Upload className="mr-2 h-4 w-4" /> Upload CSV File
-                      </Button>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                      />
-                      <Button variant="outline" onClick={handleUseSampleData}>
-                        <FileText className="mr-2 h-4 w-4" /> Use Sample Data
-                      </Button>
+                  <div className="space-y-6">
+                    {validationErrors.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Validation Errors</AlertTitle>
+                        <AlertDescription>
+                          <ul className="list-disc pl-4 mt-2 space-y-1">
+                            {validationErrors.map((error, index) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    {csvPreview && (
+                      <div className="border rounded-md p-4 bg-muted/30">
+                        <h3 className="text-sm font-medium mb-2">CSV Preview:</h3>
+                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{csvPreview}</pre>
+                      </div>
+                    )}
+                  
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                      <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</h3>
+                      <p className="text-sm text-muted-foreground mb-6">
+                        Supports CSV files with time series data. File must include a date/time column and at least one numeric value column.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button onClick={() => document.getElementById('file-upload')?.click()}>
+                          <Upload className="mr-2 h-4 w-4" /> Upload CSV File
+                        </Button>
+                        <input
+                          id="file-upload"
+                          type="file"
+                          accept=".csv"
+                          className="hidden"
+                          onChange={handleFileUpload}
+                        />
+                        <Button variant="outline" onClick={handleUseSampleData}>
+                          <FileText className="mr-2 h-4 w-4" /> Use Sample Data
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -244,7 +313,7 @@ const Analyzer = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Data Format Guide</CardTitle>
+                <CardTitle>CSV Format Requirements</CardTitle>
                 <CardDescription>
                   How to prepare your data for analysis
                 </CardDescription>
@@ -253,11 +322,15 @@ const Analyzer = () => {
                 <div className="space-y-2">
                   <h3 className="font-medium flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    Required Format
+                    Required Columns
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Data should be in CSV format with a date/time column and at least one value column.
+                    Your CSV must include:
                   </p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
+                    <li>A date/time column (e.g., "date", "time", "month", "year")</li>
+                    <li>At least one numeric value column</li>
+                  </ul>
                 </div>
                 
                 <div className="space-y-2">
@@ -266,24 +339,45 @@ const Analyzer = () => {
                     Date Format
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Dates should be consistently formatted (e.g., YYYY-MM-DD, MM/DD/YYYY).
+                    Date columns should follow one of these formats:
                   </p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
+                    <li>YYYY-MM-DD (e.g., 2023-12-31)</li>
+                    <li>MM/DD/YYYY (e.g., 12/31/2023)</li>
+                    <li>Month abbreviations (e.g., Jan, Feb, Mar)</li>
+                    <li>Year-Month (e.g., 2023-01, 2023-02)</li>
+                  </ul>
                 </div>
                 
                 <div className="space-y-2">
                   <h3 className="font-medium flex items-center">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    Value Column
+                    Value Format
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Numeric values should not contain special characters except decimals.
+                    Numeric values:
                   </p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
+                    <li>Must be plain numbers (e.g., 123, 45.67)</li>
+                    <li>Should not include currency symbols or other special characters</li>
+                    <li>Use a period (.) as the decimal separator</li>
+                  </ul>
                 </div>
                 
-                <div className="p-3 bg-blue-50 rounded-md flex items-start mt-4">
-                  <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-700">
-                    For best results, ensure your data is clean and doesn't contain missing values.
+                <div className="border rounded-md p-3 bg-blue-50">
+                  <h3 className="text-sm font-medium text-blue-700 mb-2">Example Format:</h3>
+                  <pre className="text-xs text-blue-700 whitespace-pre-wrap">
+date,sales
+2023-01,1245.50
+2023-02,1100.75
+2023-03,1350.25
+                  </pre>
+                </div>
+                
+                <div className="p-3 bg-amber-50 rounded-md flex items-start mt-4">
+                  <Info className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-700">
+                    For best results, ensure your data does not contain missing values or inconsistent formatting.
                   </p>
                 </div>
               </CardContent>
