@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, BarChart2, Lightbulb, Table, Bot, TrendingUp } from "lucide-react";
+import { MessageSquare, BarChart2, Lightbulb, Table, Bot, TrendingUp, Calendar, LineChart, Activity } from "lucide-react";
 
 const About = () => {
   const containerVariants = {
@@ -29,9 +29,9 @@ const About = () => {
         variants={containerVariants}
       >
         <motion.div variants={itemVariants}>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">About SentimentScope</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">About PredictAI</h1>
           <p className="text-muted-foreground mb-8 max-w-3xl">
-            Transforming e-commerce customer reviews into actionable business insights through advanced sentiment analysis
+            Transforming time series data into actionable business insights through advanced forecasting analysis
           </p>
         </motion.div>
 
@@ -43,22 +43,22 @@ const About = () => {
                   <Badge className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-100">
                     Our Mission
                   </Badge>
-                  <h2 className="text-2xl font-bold mb-4">Unlocking the Voice of Your Customers</h2>
+                  <h2 className="text-2xl font-bold mb-4">Turning Data into Foresight</h2>
                   <p className="text-gray-600 mb-6">
-                    SentimentScope is dedicated to helping e-commerce businesses understand their customers better through advanced natural language processing and sentiment analysis.
+                    PredictAI is dedicated to helping businesses understand future trends through advanced time series analysis and forecasting algorithms.
                   </p>
                   <p className="text-gray-600">
-                    We transform raw customer review data into clear, actionable insights that drive product improvement, enhance customer experiences, and boost business growth.
+                    We transform historical data into clear, actionable predictions that drive strategic planning, optimize operations, and boost business growth.
                   </p>
                 </div>
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-center p-8">
                   <div className="max-w-xs text-center">
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-subtle">
-                      <MessageSquare className="h-10 w-10 text-blue-600" />
+                      <LineChart className="h-10 w-10 text-blue-600" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">Data-Driven Decisions</h3>
+                    <h3 className="text-xl font-semibold mb-2">Data-Driven Predictions</h3>
                     <p className="text-sm text-gray-600">
-                      Move beyond guesswork with AI-powered sentiment analysis that reveals what customers truly think about your products.
+                      Move beyond guesswork with AI-powered time series analysis that reveals what your future metrics will look like.
                     </p>
                   </div>
                 </div>
@@ -77,7 +77,7 @@ const About = () => {
                 </div>
                 <h3 className="font-semibold text-lg mb-2">1. Data Collection</h3>
                 <p className="text-sm text-gray-600">
-                  Upload your existing customer reviews or input them directly into our system for analysis.
+                  Upload your time series data in CSV format, with a date column and at least one numeric value column.
                 </p>
               </CardContent>
             </Card>
@@ -89,7 +89,7 @@ const About = () => {
                 </div>
                 <h3 className="font-semibold text-lg mb-2">2. AI Analysis</h3>
                 <p className="text-sm text-gray-600">
-                  Our advanced NLP algorithms process the text to determine sentiment polarity and extract key themes.
+                  Our advanced algorithms process the data to identify patterns, seasonality, and trends.
                 </p>
               </CardContent>
             </Card>
@@ -99,9 +99,9 @@ const About = () => {
                 <div className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mb-4">
                   <BarChart2 className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">3. Insight Generation</h3>
+                <h3 className="font-semibold text-lg mb-2">3. Forecast Generation</h3>
                 <p className="text-sm text-gray-600">
-                  View organized, visual data that highlights patterns, trends, and opportunities for improvement.
+                  View organized, visual predictions that highlight future trends and potential opportunities.
                 </p>
               </CardContent>
             </Card>
@@ -113,12 +113,12 @@ const About = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-12">
             <div className="flex gap-4">
               <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <MessageSquare className="h-5 w-5" />
+                <Calendar className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Sentiment Classification</h3>
+                <h3 className="font-semibold mb-2">Temporal Pattern Detection</h3>
                 <p className="text-sm text-gray-600">
-                  Automatically categorize reviews as positive, neutral, or negative with high accuracy.
+                  Automatically identify seasonal patterns, cycles, and anomalies in your time series data.
                 </p>
               </div>
             </div>
@@ -130,19 +130,19 @@ const About = () => {
               <div>
                 <h3 className="font-semibold mb-2">Trend Analysis</h3>
                 <p className="text-sm text-gray-600">
-                  Track sentiment changes over time to measure the impact of product improvements.
+                  Track long-term trends and forecast future values with confidence intervals.
                 </p>
               </div>
             </div>
             
             <div className="flex gap-4">
               <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <Lightbulb className="h-5 w-5" />
+                <Activity className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Theme Extraction</h3>
+                <h3 className="font-semibold mb-2">Anomaly Detection</h3>
                 <p className="text-sm text-gray-600">
-                  Identify common topics and issues mentioned across multiple reviews.
+                  Identify outliers and anomalies that might represent opportunities or threats.
                 </p>
               </div>
             </div>
@@ -154,7 +154,7 @@ const About = () => {
               <div>
                 <h3 className="font-semibold mb-2">Visual Dashboard</h3>
                 <p className="text-sm text-gray-600">
-                  Intuitive charts and graphs that make complex data easy to understand.
+                  Intuitive charts and graphs that make complex time series data easy to understand.
                 </p>
               </div>
             </div>
@@ -169,28 +169,28 @@ const About = () => {
                 <div>
                   <h3 className="font-semibold mb-2">Data Preprocessing</h3>
                   <p className="text-sm text-gray-600">
-                    We clean and normalize review text, removing duplicates and handling missing values before processing.
+                    We clean and normalize time series data, handling missing values, resampling, and feature engineering before processing.
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold mb-2">Natural Language Processing</h3>
+                  <h3 className="font-semibold mb-2">Time Series Models</h3>
                   <p className="text-sm text-gray-600">
-                    Our system uses tokenization, stopword removal, and lemmatization to prepare text for analysis.
+                    Our system employs statistical models (ARIMA, Exponential Smoothing) and machine learning approaches (Prophet, LSTM) for forecasting.
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="font-semibold mb-2">Sentiment Classification Models</h3>
+                  <h3 className="font-semibold mb-2">Forecasting Algorithms</h3>
                   <p className="text-sm text-gray-600">
-                    We employ a combination of rule-based approaches (VADER, TextBlob) and machine learning models (Naïve Bayes, SVM, LSTM) to achieve high accuracy in sentiment classification.
+                    We use a combination of classical statistical methods and deep learning models to generate accurate predictions with confidence intervals.
                   </p>
                 </div>
                 
                 <div>
                   <h3 className="font-semibold mb-2">Data Visualization</h3>
                   <p className="text-sm text-gray-600">
-                    Interactive charts and dashboards built with modern visualization libraries help translate complex data into clear insights.
+                    Interactive charts and dashboards built with modern visualization libraries help translate complex time series data into clear insights.
                   </p>
                 </div>
               </div>
@@ -200,9 +200,9 @@ const About = () => {
 
         <motion.div variants={itemVariants}>
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 text-center mb-8">
-            <h2 className="text-2xl font-bold mb-4">Ready to understand your customers better?</h2>
+            <h2 className="text-2xl font-bold mb-4">Ready to forecast your future metrics?</h2>
             <p className="text-gray-600 max-w-2xl mx-auto mb-0">
-              Start analyzing your e-commerce reviews today and discover insights that can transform your business.
+              Start analyzing your time series data today and discover predictions that can transform your business planning.
             </p>
           </div>
         </motion.div>
