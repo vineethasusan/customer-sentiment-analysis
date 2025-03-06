@@ -1,137 +1,109 @@
 
 import { useState, useEffect } from "react";
 import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
   LineChart,
   Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell,
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowUpRight, TrendingUp, TrendingDown, BarChart2, PieChart as PieChartIcon, LineChart as LineChartIcon } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown, BarChart2, LineChart as LineChartIcon, Activity } from "lucide-react";
 
-// Mock Data
-const sentimentData = [
-  { name: "Positive", value: 65, color: "#34D399" },
-  { name: "Neutral", value: 20, color: "#60A5FA" },
-  { name: "Negative", value: 15, color: "#F87171" },
+// Mock data for time series forecasting
+const forecastData = [
+  { date: "2025-01", actual: 45, forecast: null },
+  { date: "2025-02", actual: 52, forecast: null },
+  { date: "2025-03", actual: 49, forecast: null },
+  { date: "2025-04", actual: 63, forecast: null },
+  { date: "2025-05", actual: 58, forecast: null },
+  { date: "2025-06", actual: 64, forecast: null },
+  { date: "2025-07", actual: 73, forecast: null },
+  { date: "2025-08", actual: 78, forecast: null },
+  { date: "2025-09", actual: 82, forecast: null },
+  { date: "2025-10", actual: 79, forecast: null },
+  { date: "2025-11", actual: 85, forecast: null },
+  { date: "2025-12", actual: 89, forecast: null },
+  { date: "2026-01", actual: null, forecast: 92 },
+  { date: "2026-02", actual: null, forecast: 96 },
+  { date: "2026-03", actual: null, forecast: 94 },
+  { date: "2026-04", actual: null, forecast: 98 },
+  { date: "2026-05", actual: null, forecast: 102 },
+  { date: "2026-06", actual: null, forecast: 105 },
 ];
 
-const trendsData = [
-  { month: "Jan", positive: 54, neutral: 22, negative: 24 },
-  { month: "Feb", positive: 58, neutral: 21, negative: 21 },
-  { month: "Mar", positive: 61, neutral: 19, negative: 20 },
-  { month: "Apr", positive: 57, neutral: 23, negative: 20 },
-  { month: "May", positive: 63, neutral: 21, negative: 16 },
-  { month: "Jun", positive: 65, neutral: 20, negative: 15 },
+const modelPerformance = [
+  { model: "ARIMA", accuracy: 92, trainingTime: 2.3, complexity: "Medium" },
+  { model: "Prophet", accuracy: 94, trainingTime: 3.5, complexity: "Low" },
+  { model: "LSTM", accuracy: 96, trainingTime: 8.7, complexity: "High" },
+  { model: "XGBoost", accuracy: 91, trainingTime: 1.8, complexity: "Medium" },
 ];
 
-const keywordsData = [
-  { keyword: "Quality", count: 87, sentiment: "positive" },
-  { keyword: "Delivery", count: 65, sentiment: "positive" },
-  { keyword: "Price", count: 54, sentiment: "negative" },
-  { keyword: "Customer Service", count: 76, sentiment: "positive" },
-  { keyword: "Packaging", count: 43, sentiment: "neutral" },
-  { keyword: "Durability", count: 38, sentiment: "negative" },
+const seasonalPatterns = [
+  { month: "Jan", value: 42 },
+  { month: "Feb", value: 47 },
+  { month: "Mar", value: 53 },
+  { month: "Apr", value: 58 },
+  { month: "May", value: 62 },
+  { month: "Jun", value: 68 },
+  { month: "Jul", value: 72 },
+  { month: "Aug", value: 78 },
+  { month: "Sep", value: 74 },
+  { month: "Oct", value: 68 },
+  { month: "Nov", value: 58 },
+  { month: "Dec", value: 48 },
 ];
 
-const recentReviews = [
-  {
-    id: 1,
-    text: "The product quality exceeded my expectations. Will definitely purchase again!",
-    sentiment: "positive",
-    date: "2023-06-10",
-    score: 0.92,
-  },
-  {
-    id: 2,
-    text: "Delivery was on time, but the packaging could be improved.",
-    sentiment: "neutral",
-    date: "2023-06-09",
-    score: 0.51,
-  },
-  {
-    id: 3,
-    text: "Customer service was excellent when I had an issue with my order.",
-    sentiment: "positive",
-    date: "2023-06-08",
-    score: 0.87,
-  },
-  {
-    id: 4,
-    text: "The price is too high for the quality received. Disappointed.",
-    sentiment: "negative",
-    date: "2023-06-07",
-    score: 0.21,
-  },
-];
-
-const productPerformance = [
-  { product: "Product A", positive: 78, neutral: 15, negative: 7 },
-  { product: "Product B", positive: 62, neutral: 23, negative: 15 },
-  { product: "Product C", positive: 45, neutral: 30, negative: 25 },
-  { product: "Product D", positive: 85, neutral: 10, negative: 5 },
+const anomalies = [
+  { date: "2025-03-15", expected: 51, actual: 32, impact: "high" },
+  { date: "2025-06-22", expected: 65, actual: 85, impact: "medium" },
+  { date: "2025-09-05", expected: 77, actual: 95, impact: "low" },
+  { date: "2025-11-30", expected: 82, actual: 68, impact: "medium" },
 ];
 
 const Dashboard = () => {
-  const [animatedData, setAnimatedData] = useState(
-    sentimentData.map((item) => ({ ...item, value: 0 }))
+  const [activeTab, setActiveTab] = useState("forecasts");
+  const [animatedForecastData, setAnimatedForecastData] = useState(
+    forecastData.map((item) => ({ ...item, actual: 0, forecast: 0 }))
   );
-  
-  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     // Animate data on load
     const timer = setTimeout(() => {
-      setAnimatedData(sentimentData);
+      setAnimatedForecastData(forecastData);
     }, 500);
     
     return () => clearTimeout(timer);
   }, []);
 
-  const getSentimentColor = (sentiment: string) => {
-    switch (sentiment.toLowerCase()) {
-      case "positive":
-        return "#34D399";
-      case "neutral":
-        return "#60A5FA";
-      case "negative":
-        return "#F87171";
-      default:
-        return "#60A5FA";
-    }
-  };
-
-  const getSentimentBadge = (sentiment: string) => {
-    switch (sentiment.toLowerCase()) {
-      case "positive":
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            Positive
-          </Badge>
-        );
-      case "neutral":
-        return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            Neutral
-          </Badge>
-        );
-      case "negative":
+  const getImpactBadge = (impact: string) => {
+    switch (impact.toLowerCase()) {
+      case "high":
         return (
           <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            Negative
+            High Impact
+          </Badge>
+        );
+      case "medium":
+        return (
+          <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+            Medium Impact
+          </Badge>
+        );
+      case "low":
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+            Low Impact
           </Badge>
         );
       default:
@@ -143,9 +115,9 @@ const Dashboard = () => {
     <div className="container mx-auto px-4 py-8 fade-in">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Sentiment Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Forecasting Dashboard</h1>
           <p className="text-muted-foreground mt-2">
-            Analyze customer review sentiment and discover trends
+            Monitor predictions, model performance, and detect anomalies
           </p>
         </div>
         
@@ -155,46 +127,41 @@ const Dashboard = () => {
           className="w-full lg:w-auto mt-4 lg:mt-0"
         >
           <TabsList className="w-full lg:w-auto">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="flex items-center gap-2">
+            <TabsTrigger value="forecasts" className="flex items-center gap-2">
               <LineChartIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Trends</span>
+              <span className="hidden sm:inline">Forecasts</span>
             </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <PieChartIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Products</span>
+            <TabsTrigger value="models" className="flex items-center gap-2">
+              <BarChart2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Models</span>
+            </TabsTrigger>
+            <TabsTrigger value="anomalies" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              <span className="hidden sm:inline">Anomalies</span>
             </TabsTrigger>
           </TabsList>
         
-          <TabsContent value="overview" className="mt-0 space-y-6">
-            {/* Overview Content */}
+          <TabsContent value="forecasts" className="mt-0 space-y-6">
+            {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <Card className="animate-fade-in" style={{ "--index": "0" } as React.CSSProperties}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <div className="space-y-1">
                     <CardTitle className="text-sm font-medium">
-                      Positive Sentiment
+                      Forecast Accuracy
                     </CardTitle>
-                    <CardDescription>Overall customer satisfaction</CardDescription>
+                    <CardDescription>Overall prediction quality</CardDescription>
                   </div>
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                     <TrendingUp className="w-4 h-4 text-green-700" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{animatedData[0]?.value}%</div>
-                  <Progress
-                    value={animatedData[0]?.value}
-                    className="h-2 mt-2"
-                    indicatorClassName="bg-sentiment-positive"
-                  />
+                  <div className="text-2xl font-bold">94.2%</div>
                   <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
                     <ArrowUpRight className="w-3 h-3 text-green-600" />
-                    <span className="text-green-600 font-medium">4%</span> 
-                    <span>from last month</span>
+                    <span className="text-green-600 font-medium">2.3%</span> 
+                    <span>from last quarter</span>
                   </div>
                 </CardContent>
               </Card>
@@ -203,23 +170,20 @@ const Dashboard = () => {
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <div className="space-y-1">
                     <CardTitle className="text-sm font-medium">
-                      Neutral Sentiment
+                      Mean Absolute Error
                     </CardTitle>
-                    <CardDescription>Mixed customer feedback</CardDescription>
+                    <CardDescription>Average prediction error</CardDescription>
                   </div>
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <div className="w-4 h-1 bg-blue-700 rounded-full" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{animatedData[1]?.value}%</div>
-                  <Progress
-                    value={animatedData[1]?.value}
-                    className="h-2 mt-2"
-                    indicatorClassName="bg-sentiment-neutral"
-                  />
+                  <div className="text-2xl font-bold">3.7</div>
                   <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                    <span>No significant change</span>
+                    <ArrowUpRight className="w-3 h-3 text-green-600 rotate-180" />
+                    <span className="text-green-600 font-medium">0.5</span> 
+                    <span>lower than previous model</span>
                   </div>
                 </CardContent>
               </Card>
@@ -228,323 +192,165 @@ const Dashboard = () => {
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <div className="space-y-1">
                     <CardTitle className="text-sm font-medium">
-                      Negative Sentiment
+                      Forecast Horizon
                     </CardTitle>
-                    <CardDescription>Customer dissatisfaction</CardDescription>
+                    <CardDescription>Future prediction range</CardDescription>
                   </div>
-                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                    <TrendingDown className="w-4 h-4 text-red-700" />
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-purple-700" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{animatedData[2]?.value}%</div>
-                  <Progress
-                    value={animatedData[2]?.value}
-                    className="h-2 mt-2"
-                    indicatorClassName="bg-sentiment-negative"
-                  />
+                  <div className="text-2xl font-bold">6 Months</div>
                   <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                    <ArrowUpRight className="w-3 h-3 text-red-600 rotate-180" />
-                    <span className="text-green-600 font-medium">3%</span> 
-                    <span>decrease from last month</span>
+                    <span>Next prediction: July 2026</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Main Charts */}
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="animate-fade-in col-span-1" style={{ "--index": "3" } as React.CSSProperties}>
+                <CardHeader>
+                  <CardTitle>Time Series Forecast</CardTitle>
+                  <CardDescription>
+                    Historical data with future predictions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={animatedForecastData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="actual"
+                          stroke="#3b82f6"
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                          activeDot={{ r: 6 }}
+                          name="Historical Data"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="forecast"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={{ r: 4 }}
+                          name="Forecast"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="animate-fade-in col-span-1 md:col-span-2" style={{ "--index": "3" } as React.CSSProperties}>
-                <CardHeader>
-                  <CardTitle>Sentiment Distribution</CardTitle>
-                  <CardDescription>
-                    Overall sentiment breakdown of customer reviews
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={animatedData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={80}
-                          outerRadius={120}
-                          fill="#8884d8"
-                          paddingAngle={5}
-                          dataKey="value"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
-                          animationBegin={0}
-                          animationDuration={1500}
-                        >
-                          {animatedData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `${value}%`} />
-                        <Legend verticalAlign="bottom" height={36} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-
               <Card className="animate-fade-in" style={{ "--index": "4" } as React.CSSProperties}>
                 <CardHeader>
-                  <CardTitle>Top Keywords</CardTitle>
+                  <CardTitle>Seasonal Patterns</CardTitle>
                   <CardDescription>
-                    Most frequently mentioned terms in reviews
+                    Monthly patterns detected in the data
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {keywordsData.map((keyword, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{keyword.keyword}</span>
-                          {getSentimentBadge(keyword.sentiment)}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {keyword.count} mentions
-                          </span>
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: getSentimentColor(keyword.sentiment) }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={seasonalPatterns}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0.2} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#8884d8"
+                          fillOpacity={1}
+                          fill="url(#colorValue)"
+                          name="Seasonal Value"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="animate-fade-in" style={{ "--index": "5" } as React.CSSProperties}>
                 <CardHeader>
-                  <CardTitle>Recent Reviews</CardTitle>
+                  <CardTitle>Growth Trends</CardTitle>
                   <CardDescription>
-                    Latest customer feedback with sentiment analysis
+                    Year-over-year growth analysis
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recentReviews.map((review) => (
-                      <div key={review.id} className="p-3 rounded-lg border">
-                        <div className="flex justify-between items-start mb-2">
-                          {getSentimentBadge(review.sentiment)}
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(review.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm mb-2">{review.text}</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            Sentiment Score:
-                          </span>
-                          <Progress
-                            value={review.score * 100}
-                            className="h-1.5 w-24"
-                            indicatorClassName={`bg-${
-                              review.sentiment === "positive"
-                                ? "sentiment-positive"
-                                : review.sentiment === "neutral"
-                                ? "sentiment-neutral"
-                                : "sentiment-negative"
-                            }`}
-                          />
-                          <span className="text-xs font-medium">
-                            {(review.score * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="h-72">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { quarter: "Q1", growth: 12 },
+                          { quarter: "Q2", growth: 18 },
+                          { quarter: "Q3", growth: 15 },
+                          { quarter: "Q4", growth: 22 },
+                        ]}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
+                        <XAxis dataKey="quarter" />
+                        <YAxis unit="%" />
+                        <Tooltip formatter={(value) => [`${value}%`, "Growth"]} />
+                        <Bar dataKey="growth" fill="#10b981" radius={[4, 4, 0, 0]} name="YoY Growth" />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="trends" className="mt-0 space-y-6">
-            {/* Trends Content */}
+          <TabsContent value="models" className="mt-0 space-y-6">
+            {/* Models Content */}
             <Card className="animate-fade-in">
               <CardHeader>
-                <CardTitle>Sentiment Trends Over Time</CardTitle>
+                <CardTitle>Model Performance Comparison</CardTitle>
                 <CardDescription>
-                  Monthly sentiment breakdown showing positive, neutral, and negative trends
+                  Accuracy and training metrics for different forecasting models
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-96">
+                <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={trendsData}
+                    <BarChart
+                      data={modelPerformance}
                       margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
+                      <XAxis dataKey="model" />
+                      <YAxis domain={[85, 100]} unit="%" />
+                      <Tooltip formatter={(value, name) => {
+                        if (name === "accuracy") return [`${value}%`, "Accuracy"];
+                        return [value, name];
+                      }} />
                       <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="positive"
-                        stroke="#34D399"
-                        strokeWidth={2}
-                        activeDot={{ r: 8 }}
-                        name="Positive"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="neutral"
-                        stroke="#60A5FA"
-                        strokeWidth={2}
-                        name="Neutral"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="negative"
-                        stroke="#F87171"
-                        strokeWidth={2}
-                        name="Negative"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="animate-fade-in">
-                <CardHeader>
-                  <CardTitle>Sentiment Velocity</CardTitle>
-                  <CardDescription>
-                    Rate of change in sentiment metrics over time
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">Positive Growth</span>
-                        <span className="text-green-600 text-sm">+7.4%</span>
-                      </div>
-                      <Progress
-                        value={74}
-                        className="h-2"
-                        indicatorClassName="bg-sentiment-positive"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">Neutral Change</span>
-                        <span className="text-blue-600 text-sm">-2.1%</span>
-                      </div>
-                      <Progress
-                        value={21}
-                        className="h-2"
-                        indicatorClassName="bg-sentiment-neutral"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">Negative Reduction</span>
-                        <span className="text-green-600 text-sm">-5.3%</span>
-                      </div>
-                      <Progress
-                        value={53}
-                        className="h-2"
-                        indicatorClassName="bg-sentiment-negative"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="animate-fade-in">
-                <CardHeader>
-                  <CardTitle>Key Events</CardTitle>
-                  <CardDescription>
-                    Notable events that influenced customer sentiment
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-4 p-3 rounded-lg border">
-                      <div className="w-2 bg-green-500 h-full rounded-full" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Product Update</span>
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                            Positive Impact
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Major feature update in April led to 8% increase in positive reviews
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-4 p-3 rounded-lg border">
-                      <div className="w-2 bg-red-500 h-full rounded-full" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Shipping Delays</span>
-                          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-                            Negative Impact
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Logistical issues in February caused temporary spike in negative reviews
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-4 p-3 rounded-lg border">
-                      <div className="w-2 bg-green-500 h-full rounded-full" />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Customer Service Improvement</span>
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                            Positive Impact
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          New support team training in May improved response times and satisfaction
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="products" className="mt-0 space-y-6">
-            {/* Products Content */}
-            <Card className="animate-fade-in">
-              <CardHeader>
-                <CardTitle>Product Performance Comparison</CardTitle>
-                <CardDescription>
-                  Sentiment analysis across different products
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-96">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={productPerformance}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
-                      layout="vertical"
-                    >
-                      <CartesianGrid strokeDasharray="3 3" horizontalPoints={[0, 100]} opacity={0.2} />
-                      <XAxis type="number" domain={[0, 100]} />
-                      <YAxis type="category" dataKey="product" width={100} />
-                      <Tooltip formatter={(value) => `${value}%`} />
-                      <Legend />
-                      <Bar dataKey="positive" stackId="a" fill="#34D399" name="Positive" />
-                      <Bar dataKey="neutral" stackId="a" fill="#60A5FA" name="Neutral" />
-                      <Bar dataKey="negative" stackId="a" fill="#F87171" name="Negative" />
+                      <Bar dataKey="accuracy" fill="#3b82f6" name="Accuracy" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -554,33 +360,31 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="animate-fade-in">
                 <CardHeader>
-                  <CardTitle>Top Performing Product</CardTitle>
+                  <CardTitle>Best Performing Model</CardTitle>
                   <CardDescription>
-                    Product with the highest positive sentiment
+                    Detailed metrics for LSTM model
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col items-center text-center p-6">
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                      <div className="text-green-700 text-2xl font-bold">D</div>
+                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <div className="text-blue-700 text-xl font-bold">LSTM</div>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">Product D</h3>
+                    <h3 className="text-xl font-bold mb-2">Long Short-Term Memory</h3>
                     <div className="flex items-center gap-2 mb-4">
                       <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                        85% Positive
+                        96% Accuracy
                       </Badge>
                       <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                        10% Neutral
-                      </Badge>
-                      <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-                        5% Negative
+                        Deep Learning
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Product D receives consistently excellent reviews for quality, durability, and customer support.
+                      This neural network model excels at capturing long-term dependencies in time series data,
+                      making it ideal for complex forecasting tasks.
                     </p>
                     <Button variant="outline" size="sm">
-                      View Detailed Analysis
+                      View Model Details
                     </Button>
                   </div>
                 </CardContent>
@@ -588,34 +392,111 @@ const Dashboard = () => {
               
               <Card className="animate-fade-in">
                 <CardHeader>
-                  <CardTitle>Improvement Opportunity</CardTitle>
+                  <CardTitle>Training Information</CardTitle>
                   <CardDescription>
-                    Product with the most potential for improvement
+                    Model training parameters and performance
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col items-center text-center p-6">
-                    <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                      <div className="text-amber-700 text-2xl font-bold">C</div>
-                    </div>
-                    <h3 className="text-xl font-bold mb-2">Product C</h3>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                        45% Positive
-                      </Badge>
-                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                        30% Neutral
-                      </Badge>
-                      <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-                        25% Negative
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Product C has the highest negative sentiment rate. Key issues include pricing concerns and durability problems.
-                    </p>
-                    <Button variant="outline" size="sm">
-                      View Improvement Plan
-                    </Button>
+                  <div className="space-y-4">
+                    {modelPerformance.map((model, index) => (
+                      <div key={index} className="flex items-start gap-4 p-3 rounded-lg border">
+                        <div className="w-2 bg-blue-500 h-full rounded-full" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{model.model}</span>
+                            <Badge className={`bg-${model.complexity === "High" ? "amber" : model.complexity === "Medium" ? "blue" : "green"}-100 text-${model.complexity === "High" ? "amber" : model.complexity === "Medium" ? "blue" : "green"}-800`}>
+                              {model.complexity} Complexity
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between mt-2 text-sm">
+                            <span className="text-muted-foreground">Accuracy: {model.accuracy}%</span>
+                            <span className="text-muted-foreground">Training: {model.trainingTime}s</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="anomalies" className="mt-0 space-y-6">
+            {/* Anomalies Content */}
+            <Card className="animate-fade-in">
+              <CardHeader>
+                <CardTitle>Anomaly Detection</CardTitle>
+                <CardDescription>
+                  Significant deviations from expected patterns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={anomalies}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="expected"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        name="Expected Value"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="actual"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        name="Actual Value"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+              <Card className="animate-fade-in">
+                <CardHeader>
+                  <CardTitle>Detected Anomalies</CardTitle>
+                  <CardDescription>
+                    Unusual patterns requiring investigation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {anomalies.map((anomaly, index) => (
+                      <div key={index} className="flex items-start gap-4 p-3 rounded-lg border">
+                        <div className={`w-2 bg-${anomaly.impact === "high" ? "red" : anomaly.impact === "medium" ? "amber" : "green"}-500 h-full rounded-full`} />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">Anomaly on {anomaly.date}</span>
+                            {getImpactBadge(anomaly.impact)}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Expected value: {anomaly.expected}, Actual value: {anomaly.actual}
+                            <span className="ml-2 font-medium">
+                              ({anomaly.actual > anomaly.expected ? "+" : ""}{((anomaly.actual - anomaly.expected) / anomaly.expected * 100).toFixed(1)}%)
+                            </span>
+                          </p>
+                          <div className="flex justify-end mt-2">
+                            <Button variant="outline" size="sm">
+                              Investigate
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
