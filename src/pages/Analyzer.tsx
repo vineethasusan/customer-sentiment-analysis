@@ -5,341 +5,591 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BarChart2, Loader2 } from "lucide-react";
+import { ArrowRight, BarChart2, LineChart, Upload, Loader2, FileText, Check, Info } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Mock sentiment analysis function (in a real app, this would call an API)
-const analyzeSentiment = (text: string): Promise<{
-  sentiment: "positive" | "neutral" | "negative";
-  score: number;
-  keywords: Array<{ word: string; sentiment: "positive" | "neutral" | "negative" }>;
-}> => {
-  return new Promise((resolve) => {
-    // Simulate API call delay
-    setTimeout(() => {
-      // Simple sentiment analysis based on keywords
-      const positiveWords = ["great", "excellent", "good", "love", "perfect", "amazing", "helpful", "satisfied"];
-      const negativeWords = ["bad", "poor", "terrible", "hate", "awful", "disappointed", "frustrated", "useless"];
-      
-      const words = text.toLowerCase().split(/\s+/);
-      let positiveCount = 0;
-      let negativeCount = 0;
-      
-      words.forEach(word => {
-        if (positiveWords.includes(word)) positiveCount++;
-        if (negativeWords.includes(word)) negativeCount++;
-      });
-      
-      let sentiment: "positive" | "neutral" | "negative" = "neutral";
-      let score = 0.5;
-      
-      if (positiveCount > negativeCount) {
-        sentiment = "positive";
-        score = 0.5 + (positiveCount / (positiveCount + negativeCount + 1)) * 0.5;
-      } else if (negativeCount > positiveCount) {
-        sentiment = "negative";
-        score = 0.5 - (negativeCount / (positiveCount + negativeCount + 1)) * 0.5;
-      }
-      
-      // Extract keywords
-      const keywords = words
-        .filter(word => positiveWords.includes(word) || negativeWords.includes(word))
-        .map(word => ({
-          word,
-          sentiment: positiveWords.includes(word) ? "positive" : "negative" as "positive" | "neutral" | "negative"
-        }))
-        .slice(0, 5); // Top 5 keywords
-      
-      resolve({ sentiment, score, keywords });
-    }, 1500); // 1.5 seconds delay to simulate API call
-  });
+// Mock data for visualization example
+const mockTimeSeriesData = {
+  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  values: [65, 59, 80, 81, 56, 55, 40, 45, 60, 70, 75, 78],
+  forecast: [78, 82, 85, 89, 91, 95],
+  forecastLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+};
+
+// Types for our application
+type TimeSeriesData = {
+  labels: string[];
+  values: number[];
+  forecast?: number[];
+  forecastLabels?: string[];
+};
+
+type DatasetInfo = {
+  name: string;
+  description: string;
+  rows: number;
+  columns: number;
+  timeRange: string;
+  dataType: string;
+  uploadDate: Date;
 };
 
 const Analyzer = () => {
-  const [reviewText, setReviewText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    sentiment: "positive" | "neutral" | "negative";
-    score: number;
-    keywords: Array<{ word: string; sentiment: "positive" | "neutral" | "negative" }>;
-  } | null>(null);
-  const [recentAnalyses, setRecentAnalyses] = useState<Array<{
-    id: number;
-    text: string;
-    sentiment: "positive" | "neutral" | "negative";
-    score: number;
-    timestamp: Date;
-  }>>([]);
+  const [activeTab, setActiveTab] = useState("upload");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [csvContent, setCsvContent] = useState("");
+  const [datasetInfo, setDatasetInfo] = useState<DatasetInfo | null>(null);
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData | null>(null);
+  const [selectedModel, setSelectedModel] = useState("auto");
+  const [forecasting, setForecasting] = useState(false);
 
-  const handleAnalyze = async () => {
-    if (!reviewText.trim()) {
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file type
+    if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
       toast({
-        title: "Empty review",
-        description: "Please enter a review to analyze.",
+        title: "Invalid file type",
+        description: "Please upload a CSV file.",
         variant: "destructive",
       });
       return;
     }
+
+    setIsUploading(true);
     
-    setLoading(true);
-    try {
-      const sentimentResult = await analyzeSentiment(reviewText);
-      setResult(sentimentResult);
-      
-      // Add to recent analyses
-      setRecentAnalyses(prev => [
-        {
-          id: Date.now(),
-          text: reviewText,
-          sentiment: sentimentResult.sentiment,
-          score: sentimentResult.score,
-          timestamp: new Date()
-        },
-        ...prev.slice(0, 4) // Keep only 5 recent analyses
-      ]);
-      
-      toast({
-        title: "Analysis complete",
-        description: `Review sentiment: ${sentimentResult.sentiment}`,
-      });
-    } catch (error) {
-      console.error("Error analyzing sentiment:", error);
-      toast({
-        title: "Analysis failed",
-        description: "Sorry, we couldn't analyze your review. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Simulate upload progress
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      setUploadProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        
+        // Read file content
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const content = e.target?.result as string;
+          setCsvContent(content);
+          
+          // Generate mock dataset info
+          const mockInfo: DatasetInfo = {
+            name: file.name,
+            description: "Time series dataset",
+            rows: Math.floor(Math.random() * 1000) + 500,
+            columns: Math.floor(Math.random() * 10) + 3,
+            timeRange: "Jan 2023 - Dec 2023",
+            dataType: "Numeric, Time Series",
+            uploadDate: new Date()
+          };
+          
+          setDatasetInfo(mockInfo);
+          
+          // Set mock time series data for visualization
+          setTimeSeriesData(mockTimeSeriesData);
+          
+          // Complete upload
+          setTimeout(() => {
+            setIsUploading(false);
+            setActiveTab("visualize");
+            toast({
+              title: "Upload successful",
+              description: `File "${file.name}" has been uploaded.`,
+            });
+          }, 500);
+        };
+        
+        reader.readAsText(file);
+      }
+    }, 200);
   };
 
-  const getSentimentColor = (sentiment: "positive" | "neutral" | "negative") => {
-    switch (sentiment) {
-      case "positive":
-        return "#34D399"; // green
-      case "neutral":
-        return "#60A5FA"; // blue
-      case "negative":
-        return "#F87171"; // red
-      default:
-        return "#60A5FA"; // blue
-    }
+  // Handle sample data generation
+  const handleUseSampleData = () => {
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    // Simulate upload progress
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 20;
+      setUploadProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        
+        // Generate sample CSV content
+        const sampleCsv = "date,value\n2023-01,65\n2023-02,59\n2023-03,80\n2023-04,81\n2023-05,56\n2023-06,55\n2023-07,40\n2023-08,45\n2023-09,60\n2023-10,70\n2023-11,75\n2023-12,78";
+        setCsvContent(sampleCsv);
+        
+        // Set mock dataset info
+        const mockInfo: DatasetInfo = {
+          name: "sample_sales_data.csv",
+          description: "Monthly sales data from 2023",
+          rows: 12,
+          columns: 2,
+          timeRange: "Jan 2023 - Dec 2023",
+          dataType: "Numeric, Time Series",
+          uploadDate: new Date()
+        };
+        
+        setDatasetInfo(mockInfo);
+        
+        // Set mock time series data for visualization
+        setTimeSeriesData(mockTimeSeriesData);
+        
+        // Complete process
+        setTimeout(() => {
+          setIsUploading(false);
+          setActiveTab("visualize");
+          toast({
+            title: "Sample data loaded",
+            description: "Sample time series data has been loaded successfully.",
+          });
+        }, 500);
+      }
+    }, 100);
   };
 
-  const getSentimentBadge = (sentiment: "positive" | "neutral" | "negative") => {
-    switch (sentiment) {
-      case "positive":
-        return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            Positive
-          </Badge>
-        );
-      case "neutral":
-        return (
-          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-            Neutral
-          </Badge>
-        );
-      case "negative":
-        return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            Negative
-          </Badge>
-        );
-    }
+  // Handle forecast generation
+  const handleGenerateForecast = () => {
+    if (!timeSeriesData) return;
+    
+    setForecasting(true);
+    
+    // Simulate forecast generation
+    setTimeout(() => {
+      // Already have mock forecast data in our timeSeriesData
+      setActiveTab("forecast");
+      setForecasting(false);
+      toast({
+        title: "Forecast generated",
+        description: `Forecast successfully generated using ${selectedModel === 'auto' ? 'Auto-selected' : selectedModel} model.`,
+      });
+    }, 2000);
   };
 
   return (
     <div className="container mx-auto px-4 py-8 fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Sentiment Analyzer</h1>
+        <h1 className="text-3xl font-bold tracking-tight">PredictAI Analyzer</h1>
         <p className="text-muted-foreground mt-2">
-          Analyze the sentiment of customer reviews in real-time
+          Upload time series data, visualize trends, and generate forecasts
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 animate-fade-in">
-          <CardHeader>
-            <CardTitle>Analyze a Review</CardTitle>
-            <CardDescription>
-              Enter a product review to analyze its sentiment
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Textarea
-                placeholder="Enter a product review here... (e.g. 'I love this product, it's amazing!')"
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-                className="min-h-32 resize-none"
-              />
-              <Button 
-                onClick={handleAnalyze} 
-                disabled={loading || !reviewText.trim()}
-                className="w-full"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    Analyze Sentiment
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsTrigger value="upload" disabled={isUploading}>
+            <Upload className="mr-2 h-4 w-4" />
+            Data Upload
+          </TabsTrigger>
+          <TabsTrigger value="visualize" disabled={!timeSeriesData || isUploading}>
+            <BarChart2 className="mr-2 h-4 w-4" />
+            Visualization
+          </TabsTrigger>
+          <TabsTrigger value="forecast" disabled={!timeSeriesData || isUploading}>
+            <LineChart className="mr-2 h-4 w-4" />
+            Forecast
+          </TabsTrigger>
+        </TabsList>
 
-            {result && (
-              <motion.div 
-                className="mt-6 space-y-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Analysis Result</h3>
-                  {getSentimentBadge(result.sentiment)}
+        <TabsContent value="upload">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Upload Time Series Data</CardTitle>
+                <CardDescription>
+                  Upload a CSV file containing your time series data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!isUploading ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Supports CSV files with time series data. Make sure your data includes a date/time column.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <Button onClick={() => document.getElementById('file-upload')?.click()}>
+                        <Upload className="mr-2 h-4 w-4" /> Upload CSV File
+                      </Button>
+                      <input
+                        id="file-upload"
+                        type="file"
+                        accept=".csv"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                      <Button variant="outline" onClick={handleUseSampleData}>
+                        <FileText className="mr-2 h-4 w-4" /> Use Sample Data
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 text-center">
+                    <Loader2 className="h-12 w-12 mx-auto text-primary animate-spin mb-4" />
+                    <h3 className="text-lg font-medium mb-4">Processing your data...</h3>
+                    <Progress value={uploadProgress} className="h-2 mb-2" />
+                    <p className="text-sm text-muted-foreground">{uploadProgress}% complete</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Format Guide</CardTitle>
+                <CardDescription>
+                  How to prepare your data for analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="font-medium flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    Required Format
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Data should be in CSV format with a date/time column and at least one value column.
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span>Negative</span>
-                    <span>Neutral</span>
-                    <span>Positive</span>
-                  </div>
-                  <div className="relative h-2 w-full bg-gray-200 rounded-full">
-                    <div 
-                      className="absolute h-4 w-4 rounded-full bg-white border-2 transform -translate-y-1/4"
-                      style={{ 
-                        left: `${result.score * 100}%`, 
-                        borderColor: getSentimentColor(result.sentiment)
-                      }}
-                    />
-                  </div>
-                  <div className="text-sm text-center mt-1">
-                    Sentiment Score: {Math.round(result.score * 100)}%
-                  </div>
+                  <h3 className="font-medium flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    Date Format
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Dates should be consistently formatted (e.g., YYYY-MM-DD, MM/DD/YYYY).
+                  </p>
                 </div>
                 
-                {result.keywords.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium mb-2">Key Sentiment Words</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {result.keywords.map((keyword, index) => (
-                        <Badge 
-                          key={index}
-                          className={`
-                            ${keyword.sentiment === 'positive' ? 'bg-green-100 text-green-800' : 
-                              keyword.sentiment === 'negative' ? 'bg-red-100 text-red-800' : 
-                              'bg-blue-100 text-blue-800'}
-                          `}
-                        >
-                          {keyword.word}
-                        </Badge>
-                      ))}
+                <div className="space-y-2">
+                  <h3 className="font-medium flex items-center">
+                    <Check className="h-4 w-4 text-green-500 mr-2" />
+                    Value Column
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Numeric values should not contain special characters except decimals.
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-blue-50 rounded-md flex items-start mt-4">
+                  <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-blue-700">
+                    For best results, ensure your data is clean and doesn't contain missing values.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="visualize">
+          {timeSeriesData && datasetInfo && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div>
+                    <CardTitle>Time Series Visualization</CardTitle>
+                    <CardDescription>
+                      Visual representation of your uploaded data
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline" className="ml-2">
+                    {datasetInfo.rows} data points
+                  </Badge>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="h-[300px] w-full bg-gray-50 rounded-md flex items-center justify-center mb-4">
+                    {/* This would be replaced with an actual chart component */}
+                    <div className="relative w-full h-full p-4">
+                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200"></div>
+                      <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200"></div>
+                      
+                      {/* Simple visualization of time series data */}
+                      <div className="relative h-full w-full flex items-end">
+                        {timeSeriesData.values.map((value, index) => (
+                          <div 
+                            key={index} 
+                            className="flex-1 mx-[1px] bg-primary/80 hover:bg-primary transition-colors"
+                            style={{ height: `${(value / 100) * 80}%` }}
+                            title={`${timeSeriesData.labels[index]}: ${value}`}
+                          ></div>
+                        ))}
+                      </div>
+                      
+                      {/* X-axis labels */}
+                      <div className="absolute bottom-[-24px] left-0 right-0 flex justify-between px-2">
+                        <span className="text-xs text-muted-foreground">{timeSeriesData.labels[0]}</span>
+                        <span className="text-xs text-muted-foreground">{timeSeriesData.labels[timeSeriesData.labels.length - 1]}</span>
+                      </div>
                     </div>
                   </div>
-                )}
-              </motion.div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle>Recent Analyses</CardTitle>
-            <CardDescription>
-              Your most recent sentiment analyses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentAnalyses.length > 0 ? (
-              <div className="space-y-4">
-                {recentAnalyses.map((analysis) => (
-                  <div key={analysis.id} className="p-3 rounded-lg border">
-                    <div className="flex justify-between items-start mb-2">
-                      {getSentimentBadge(analysis.sentiment)}
-                      <span className="text-xs text-muted-foreground">
-                        {analysis.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                  
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">Dataset: {datasetInfo.name}</p>
+                      <p className="text-xs text-muted-foreground">Time Range: {datasetInfo.timeRange}</p>
                     </div>
-                    <p className="text-sm mb-2 line-clamp-2">{analysis.text}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        Score:
-                      </span>
-                      <Progress
-                        value={analysis.score * 100}
-                        className="h-1.5 w-24"
-                        indicatorClassName={`bg-${
-                          analysis.sentiment === "positive"
-                            ? "green-500"
-                            : analysis.sentiment === "neutral"
-                            ? "blue-500"
-                            : "red-500"
-                        }`}
-                      />
-                      <span className="text-xs font-medium">
-                        {Math.round(analysis.score * 100)}%
-                      </span>
+                    <Button onClick={handleGenerateForecast}>
+                      Generate Forecast
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dataset Information</CardTitle>
+                  <CardDescription>
+                    Summary of your uploaded time series data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">File Name</p>
+                      <p className="font-medium">{datasetInfo.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Upload Date</p>
+                      <p className="font-medium">{datasetInfo.uploadDate.toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Rows</p>
+                      <p className="font-medium">{datasetInfo.rows}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Columns</p>
+                      <p className="font-medium">{datasetInfo.columns}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Time Range</p>
+                      <p className="font-medium">{datasetInfo.timeRange}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Data Type</p>
+                      <p className="font-medium">{datasetInfo.dataType}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <BarChart2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">
-                  No analyses yet. Try analyzing a review!
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  
+                  <div className="pt-4 border-t">
+                    <p className="text-sm font-medium mb-2">Select Forecasting Model</p>
+                    <select 
+                      className="w-full p-2 border rounded-md"
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                    >
+                      <option value="auto">Auto-select (Recommended)</option>
+                      <option value="arima">ARIMA</option>
+                      <option value="prophet">Prophet</option>
+                      <option value="lstm">LSTM (Deep Learning)</option>
+                      <option value="xgboost">XGBoost</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Auto-select analyzes your data and chooses the best model automatically.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
 
-      <Card className="mt-6 animate-fade-in">
+        <TabsContent value="forecast">
+          {timeSeriesData && datasetInfo && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div>
+                    <CardTitle>Forecast Results</CardTitle>
+                    <CardDescription>
+                      Forecasted values for the next 6 months
+                    </CardDescription>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                    {selectedModel === 'auto' ? 'Auto-selected' : selectedModel} Model
+                  </Badge>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {forecasting ? (
+                    <div className="h-[300px] w-full flex items-center justify-center">
+                      <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="h-[300px] w-full bg-gray-50 rounded-md flex items-center justify-center mb-4">
+                        {/* This would be replaced with an actual forecast chart component */}
+                        <div className="relative w-full h-full p-4">
+                          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200"></div>
+                          <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200"></div>
+                          
+                          {/* Simple visualization of time series data */}
+                          <div className="relative h-full w-full flex items-end">
+                            {/* Historical data */}
+                            {timeSeriesData.values.map((value, index) => (
+                              <div 
+                                key={`hist-${index}`} 
+                                className="flex-1 mx-[1px] bg-primary/80"
+                                style={{ height: `${(value / 100) * 80}%` }}
+                                title={`${timeSeriesData.labels[index]}: ${value}`}
+                              ></div>
+                            ))}
+                            
+                            {/* Forecast data */}
+                            {timeSeriesData.forecast?.map((value, index) => (
+                              <div 
+                                key={`forecast-${index}`}
+                                className="flex-1 mx-[1px] bg-blue-300 border-2 border-dashed border-blue-500"
+                                style={{ height: `${(value / 100) * 80}%` }}
+                                title={`${timeSeriesData.forecastLabels?.[index]}: ${value} (Forecast)`}
+                              ></div>
+                            ))}
+                          </div>
+                          
+                          {/* Legend */}
+                          <div className="absolute top-2 right-2 flex items-center space-x-4">
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-primary mr-1"></div>
+                              <span className="text-xs">Historical</span>
+                            </div>
+                            <div className="flex items-center">
+                              <div className="w-3 h-3 bg-blue-300 border border-dashed border-blue-500 mr-1"></div>
+                              <span className="text-xs">Forecast</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Card className="bg-muted/30">
+                            <CardContent className="p-4">
+                              <h3 className="text-sm font-medium mb-2">Forecast Accuracy</h3>
+                              <div className="flex items-center">
+                                <Progress value={85} className="h-2 flex-1 mr-2" />
+                                <span className="text-sm font-medium">85%</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                          
+                          <Card className="bg-muted/30">
+                            <CardContent className="p-4">
+                              <h3 className="text-sm font-medium mb-2">Error Rate (RMSE)</h3>
+                              <p className="text-2xl font-bold">4.23</p>
+                            </CardContent>
+                          </Card>
+                        </div>
+                        
+                        <Button>
+                          Export Forecast Results
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Forecast Details</CardTitle>
+                  <CardDescription>
+                    Predicted values for future periods
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {forecasting ? (
+                    <div className="h-[200px] flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="border rounded-md overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="p-2 text-left">Period</th>
+                              <th className="p-2 text-right">Forecast</th>
+                              <th className="p-2 text-right">Confidence</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {timeSeriesData.forecastLabels?.map((label, index) => (
+                              <tr key={index} className="border-t">
+                                <td className="p-2">{label}</td>
+                                <td className="p-2 text-right font-medium">{timeSeriesData.forecast?.[index]}</td>
+                                <td className="p-2 text-right">±2.1</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      <div className="p-3 bg-blue-50 rounded-md flex items-start">
+                        <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-blue-700">
+                          <p className="font-medium mb-1">Forecast Interpretation</p>
+                          <p>The model indicates an upward trend with seasonal variations. Peak values are predicted in May.</p>
+                        </div>
+                      </div>
+                      
+                      <Button variant="outline" className="w-full" onClick={() => setActiveTab("visualize")}>
+                        Modify Model Parameters
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <Card className="mt-8">
         <CardHeader>
-          <CardTitle>How It Works</CardTitle>
+          <CardTitle>How PredictAI Works</CardTitle>
           <CardDescription>
-            Understanding our sentiment analysis process
+            Our forecasting process explained
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex flex-col items-center text-center space-y-3">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-700 font-bold">1</span>
+                <Upload className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="font-semibold">Input</h3>
+              <h3 className="font-semibold">1. Upload Data</h3>
               <p className="text-sm text-muted-foreground">
-                Enter any customer review or feedback text into the analyzer
+                Upload your time series data in CSV format. We automatically process and prepare it for analysis.
               </p>
             </div>
             
             <div className="flex flex-col items-center text-center space-y-3">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-700 font-bold">2</span>
+                <BarChart2 className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="font-semibold">Analysis</h3>
+              <h3 className="font-semibold">2. Visualize & Analyze</h3>
               <p className="text-sm text-muted-foreground">
-                Our algorithm identifies sentiment indicators and key phrases
+                Explore your data with interactive charts. Our AI analyzes patterns, trends, and seasonality.
               </p>
             </div>
             
             <div className="flex flex-col items-center text-center space-y-3">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-700 font-bold">3</span>
+                <LineChart className="h-5 w-5 text-primary" />
               </div>
-              <h3 className="font-semibold">Results</h3>
+              <h3 className="font-semibold">3. Generate Forecasts</h3>
               <p className="text-sm text-muted-foreground">
-                Get instant sentiment classification and key insights from the text
+                Our ML models predict future values with high accuracy. Export results for use in your business.
               </p>
             </div>
           </div>

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { ChevronRight, BarChart2, MessageCircle, Home, Info, Menu, X } from "lucide-react";
+import { ChevronRight, BarChart2, LineChart, Home, Info, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -32,7 +32,7 @@ const Layout = ({ children }: LayoutProps) => {
   const navItems = [
     { path: "/", label: "Home", icon: <Home className="w-4 h-4 mr-2" /> },
     { path: "/dashboard", label: "Dashboard", icon: <BarChart2 className="w-4 h-4 mr-2" /> },
-    { path: "/analyzer", label: "Analyzer", icon: <MessageCircle className="w-4 h-4 mr-2" /> },
+    { path: "/analyzer", label: "Analyzer", icon: <LineChart className="w-4 h-4 mr-2" /> },
     { path: "/about", label: "About", icon: <Info className="w-4 h-4 mr-2" /> },
   ];
 
@@ -41,13 +41,13 @@ const Layout = ({ children }: LayoutProps) => {
       <header 
         className={cn(
           "sticky top-0 z-50 w-full transition-all duration-300 ease-in-out",
-          isScrolled ? "bg-white/80 backdrop-blur-md shadow-subtle" : "bg-transparent"
+          isScrolled ? "bg-white/80 backdrop-blur-md shadow-sm" : "bg-transparent"
         )}
       >
         <div className="container flex items-center justify-between h-16 px-4 md:px-6">
           <Link to="/" className="flex items-center space-x-2">
             <BarChart2 className="w-6 h-6 text-primary" />
-            <span className="font-bold text-lg tracking-tight">SentimentScope</span>
+            <span className="font-bold text-lg tracking-tight">PredictAI</span>
           </Link>
           
           {!isMobile && (
@@ -116,7 +116,7 @@ const Layout = ({ children }: LayoutProps) => {
       <footer className="bg-white dark:bg-gray-900 border-t">
         <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            © 2023 SentimentScope. All rights reserved.
+            © {new Date().getFullYear()} PredictAI. All rights reserved.
           </p>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
             <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
