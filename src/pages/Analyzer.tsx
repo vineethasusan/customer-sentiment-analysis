@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { validateCSV, extractTimeSeriesData } from "@/utils/csvValidator";
 
-// Mock data for visualization example
 const mockTimeSeriesData = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   values: [65, 59, 80, 81, 56, 55, 40, 45, 60, 70, 75, 78],
@@ -20,7 +18,6 @@ const mockTimeSeriesData = {
   forecastLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
 };
 
-// Types for our application
 type TimeSeriesData = {
   labels: string[];
   values: number[];
@@ -50,15 +47,12 @@ const Analyzer = () => {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [csvPreview, setCsvPreview] = useState<string | null>(null);
 
-  // Handle file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Reset previous errors
     setValidationErrors([]);
 
-    // Check file type
     if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
       toast({
         title: "Invalid file type",
@@ -70,7 +64,6 @@ const Analyzer = () => {
 
     setIsUploading(true);
     
-    // Simulate upload progress
     let progress = 0;
     const interval = setInterval(() => {
       progress += 10;
@@ -78,26 +71,21 @@ const Analyzer = () => {
       if (progress >= 100) {
         clearInterval(interval);
         
-        // Read file content
         const reader = new FileReader();
         reader.onload = (e) => {
           const content = e.target?.result as string;
           setCsvContent(content);
           
-          // Set a preview of the CSV for the user to see
           const lines = content.split('\n');
           const preview = lines.slice(0, Math.min(5, lines.length)).join('\n');
           setCsvPreview(preview);
           
-          // Validate the CSV
           const validationResult = validateCSV(content);
           
           if (validationResult.isValid && validationResult.data) {
-            // Extract time series data
             const extractedData = extractTimeSeriesData(validationResult);
             
             if (extractedData) {
-              // Generate dataset info
               const mockInfo: DatasetInfo = {
                 name: file.name,
                 description: `Time series dataset with ${validationResult.data.valueColumns.length} value column(s)`,
@@ -110,7 +98,6 @@ const Analyzer = () => {
               
               setDatasetInfo(mockInfo);
               
-              // Set time series data for visualization
               setTimeSeriesData({
                 labels: extractedData.labels,
                 values: extractedData.values,
@@ -118,7 +105,6 @@ const Analyzer = () => {
                 forecastLabels: mockTimeSeriesData.forecastLabels
               });
               
-              // Complete upload
               setTimeout(() => {
                 setIsUploading(false);
                 setActiveTab("visualize");
@@ -140,7 +126,6 @@ const Analyzer = () => {
     }, 200);
   };
 
-  // Handle validation errors
   const handleValidationError = (errors: string[]) => {
     setValidationErrors(errors);
     setIsUploading(false);
@@ -151,15 +136,12 @@ const Analyzer = () => {
     });
   };
 
-  // Handle sample data generation
   const handleUseSampleData = () => {
-    // Reset previous errors
     setValidationErrors([]);
     
     setIsUploading(true);
     setUploadProgress(0);
     
-    // Simulate upload progress
     let progress = 0;
     const interval = setInterval(() => {
       progress += 20;
@@ -167,12 +149,10 @@ const Analyzer = () => {
       if (progress >= 100) {
         clearInterval(interval);
         
-        // Generate sample CSV content
         const sampleCsv = "date,value\n2023-01,65\n2023-02,59\n2023-03,80\n2023-04,81\n2023-05,56\n2023-06,55\n2023-07,40\n2023-08,45\n2023-09,60\n2023-10,70\n2023-11,75\n2023-12,78";
         setCsvContent(sampleCsv);
         setCsvPreview(sampleCsv);
         
-        // Set mock dataset info
         const mockInfo: DatasetInfo = {
           name: "sample_sales_data.csv",
           description: "Monthly sales data from 2023",
@@ -185,10 +165,8 @@ const Analyzer = () => {
         
         setDatasetInfo(mockInfo);
         
-        // Set mock time series data for visualization
         setTimeSeriesData(mockTimeSeriesData);
         
-        // Complete process
         setTimeout(() => {
           setIsUploading(false);
           setActiveTab("visualize");
@@ -201,15 +179,12 @@ const Analyzer = () => {
     }, 100);
   };
 
-  // Handle forecast generation
   const handleGenerateForecast = () => {
     if (!timeSeriesData) return;
     
     setForecasting(true);
     
-    // Simulate forecast generation
     setTimeout(() => {
-      // Already have mock forecast data in our timeSeriesData
       setActiveTab("forecast");
       setForecasting(false);
       toast({
@@ -280,8 +255,15 @@ const Analyzer = () => {
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
                       <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Your CSV file must contain exactly 2 columns:
+                      </p>
+                      <ul className="text-sm text-muted-foreground mb-4 list-disc inline-block text-left">
+                        <li><span className="font-medium">Column 1:</span> Date/time values (e.g., "date", "time", "year-month")</li>
+                        <li><span className="font-medium">Column 2:</span> Numeric values (e.g., "sales", "temperature")</li>
+                      </ul>
                       <p className="text-sm text-muted-foreground mb-6">
-                        Supports CSV files with time series data. File must include a date/time column and at least one numeric value column.
+                        Example format: <code className="bg-muted px-1 py-0.5 rounded">date,value</code> or <code className="bg-muted px-1 py-0.5 rounded">month,sales</code>
                       </p>
                       <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Button onClick={() => document.getElementById('file-upload')?.click()}>
@@ -325,11 +307,11 @@ const Analyzer = () => {
                     Required Columns
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Your CSV must include:
+                    Your CSV must include exactly 2 columns:
                   </p>
                   <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
-                    <li>A date/time column (e.g., "date", "time", "month", "year")</li>
-                    <li>At least one numeric value column</li>
+                    <li>Column 1: A date/time column (named "date", "time", "month", etc.)</li>
+                    <li>Column 2: A numeric value column (named "value", "sales", etc.)</li>
                   </ul>
                 </div>
                 
@@ -402,12 +384,10 @@ date,sales
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="h-[300px] w-full bg-gray-50 rounded-md flex items-center justify-center mb-4">
-                    {/* This would be replaced with an actual chart component */}
                     <div className="relative w-full h-full p-4">
                       <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200"></div>
                       <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200"></div>
                       
-                      {/* Simple visualization of time series data */}
                       <div className="relative h-full w-full flex items-end">
                         {timeSeriesData.values.map((value, index) => (
                           <div 
@@ -419,7 +399,6 @@ date,sales
                         ))}
                       </div>
                       
-                      {/* X-axis labels */}
                       <div className="absolute bottom-[-24px] left-0 right-0 flex justify-between px-2">
                         <span className="text-xs text-muted-foreground">{timeSeriesData.labels[0]}</span>
                         <span className="text-xs text-muted-foreground">{timeSeriesData.labels[timeSeriesData.labels.length - 1]}</span>
@@ -521,14 +500,11 @@ date,sales
                   ) : (
                     <>
                       <div className="h-[300px] w-full bg-gray-50 rounded-md flex items-center justify-center mb-4">
-                        {/* This would be replaced with an actual forecast chart component */}
                         <div className="relative w-full h-full p-4">
                           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200"></div>
                           <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200"></div>
                           
-                          {/* Simple visualization of time series data */}
                           <div className="relative h-full w-full flex items-end">
-                            {/* Historical data */}
                             {timeSeriesData.values.map((value, index) => (
                               <div 
                                 key={`hist-${index}`} 
@@ -538,7 +514,6 @@ date,sales
                               ></div>
                             ))}
                             
-                            {/* Forecast data */}
                             {timeSeriesData.forecast?.map((value, index) => (
                               <div 
                                 key={`forecast-${index}`}
@@ -549,7 +524,6 @@ date,sales
                             ))}
                           </div>
                           
-                          {/* Legend */}
                           <div className="absolute top-2 right-2 flex items-center space-x-4">
                             <div className="flex items-center">
                               <div className="w-3 h-3 bg-primary mr-1"></div>
