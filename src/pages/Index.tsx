@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart2, Database, LineChart, Upload } from "lucide-react";
+import { ArrowRight, Lock, Users, Shield, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -8,24 +8,24 @@ import { motion } from "framer-motion";
 const Index = () => {
   const features = [
     {
-      icon: <Upload className="h-8 w-8 text-primary" />,
-      title: "Easy Data Upload",
-      description: "Upload CSV, Excel files or connect to APIs to import your time series data."
+      icon: <Lock className="h-8 w-8 text-primary" />,
+      title: "Private & Anonymous",
+      description: "End-to-end encryption with option to remain anonymous during consultations."
     },
     {
-      icon: <LineChart className="h-8 w-8 text-primary" />,
-      title: "Advanced Forecasting",
-      description: "Leverage AI models like ARIMA, Prophet, LSTM and XGBoost for accurate predictions."
+      icon: <Users className="h-8 w-8 text-primary" />,
+      title: "Professional Network",
+      description: "Connect with verified mentors, officials, and medical practitioners globally."
     },
     {
-      icon: <BarChart2 className="h-8 w-8 text-primary" />,
-      title: "Interactive Visualizations",
-      description: "Explore data with interactive charts and customize dashboards to your needs."
+      icon: <Shield className="h-8 w-8 text-primary" />,
+      title: "Security Assured",
+      description: "GDPR & HIPAA compliant platform with strict privacy certifications."
     },
     {
-      icon: <Database className="h-8 w-8 text-primary" />,
-      title: "Industry Templates",
-      description: "Access pre-built templates for retail, finance, healthcare, and manufacturing."
+      icon: <Video className="h-8 w-8 text-primary" />,
+      title: "Multiple Formats",
+      description: "Choose between video calls, live chat, or messaging for your consultations."
     }
   ];
 
@@ -41,7 +41,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              PredictAI: <span className="text-primary">Time Series Analytics</span> for Forecasting
+              SecureConnect: <span className="text-primary">Privacy-Focused</span> Consultations
             </motion.h1>
             <motion.p 
               className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
@@ -49,7 +49,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              Advanced AI-powered forecasting to predict trends and drive data-driven decision making for your business.
+              Connect anonymously with mentors, officials, and medical practitioners for guidance and support, with privacy at the core of every interaction.
             </motion.p>
             <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center"
@@ -58,7 +58,7 @@ const Index = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <Button size="lg" asChild>
-                <Link to="/analyzer">Try It Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/secure-connect">Get Started <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/about">Learn More</Link>
@@ -78,9 +78,9 @@ const Index = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Powerful Features for Accurate Forecasting</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Privacy-First Professional Consultations</h2>
             <p className="text-lg text-muted-foreground">
-              Our platform provides the tools you need to analyze historical data and predict future trends with confidence.
+              Our platform ensures your privacy while connecting you with the professionals you need.
             </p>
           </div>
           
@@ -100,16 +100,72 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Professional Categories Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Connect With Professionals</h2>
+            <p className="text-lg text-muted-foreground">
+              Find the right expert for your specific needs
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold mb-3 flex items-center">
+                  <Users className="mr-2 h-5 w-5 text-primary" /> Mentors & Coaches
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Career guidance, personal development, and professional mentorship from industry experts.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link to="/secure-connect">Find a Mentor</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold mb-3 flex items-center">
+                  <Shield className="mr-2 h-5 w-5 text-primary" /> Officials
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Legal advisors, financial consultants, and government representatives for official guidance.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link to="/secure-connect">Consult an Official</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold mb-3 flex items-center">
+                  <Video className="mr-2 h-5 w-5 text-primary" /> Medical Practitioners
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Doctors, therapists, and counselors for health consultations and mental wellness support.
+                </p>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link to="/secure-connect">Book a Practitioner</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-primary/10 to-blue-100">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Ready to Transform Your Forecasting?</h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Ready for Private Consultations?</h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Start analyzing your time series data and get accurate predictions in minutes.
+              Join SecureConnect today and connect with professionals while maintaining your privacy.
             </p>
             <Button size="lg" asChild>
-              <Link to="/analyzer">Get Started <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link to="/secure-connect">Get Started <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
