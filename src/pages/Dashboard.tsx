@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Users, Shield, Video, MessageSquare, TrendingUp, 
-  Activity, Globe, Calendar, Check, AlertTriangle 
+  Activity, Globe, Calendar, Check, AlertTriangle,
+  Map, ChevronRight
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState("month");
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [viewMode, setViewMode] = useState("country"); // "country" or "state"
   
-  // Mock data for the dashboard
   const consultationData = [
     { name: "Jan", mentors: 65, officials: 45, medical: 35 },
     { name: "Feb", mentors: 70, officials: 48, medical: 40 },
@@ -64,6 +65,59 @@ const Dashboard = () => {
     { id: 4, user: "User #39104", professional: "Financial Consultant", type: "Messaging", status: "In Progress", duration: "15 min" },
     { id: 5, user: "User #51023", professional: "Therapist", type: "Video Call", status: "Completed", duration: "60 min" },
   ];
+
+  const countryData = [
+    { name: "United States", users: 1850, sessions: 12500, growth: 15 },
+    { name: "United Kingdom", users: 920, sessions: 6300, growth: 12 },
+    { name: "Canada", users: 780, sessions: 5100, growth: 18 },
+    { name: "Germany", users: 650, sessions: 4300, growth: 9 },
+    { name: "Australia", users: 520, sessions: 3200, growth: 14 },
+    { name: "France", users: 480, sessions: 2900, growth: 7 },
+    { name: "India", users: 420, sessions: 2600, growth: 22 },
+    { name: "Brazil", users: 380, sessions: 2200, growth: 19 },
+    { name: "Japan", users: 340, sessions: 1800, growth: 5 },
+    { name: "South Africa", users: 190, sessions: 1100, growth: 11 },
+  ];
+
+  const stateData = {
+    "United States": [
+      { name: "California", users: 480, sessions: 3200, growth: 17 },
+      { name: "New York", users: 390, sessions: 2600, growth: 14 },
+      { name: "Texas", users: 320, sessions: 2100, growth: 19 },
+      { name: "Florida", users: 280, sessions: 1900, growth: 16 },
+      { name: "Illinois", users: 210, sessions: 1400, growth: 11 },
+      { name: "Others", users: 170, sessions: 1300, growth: 13 },
+    ],
+    "United Kingdom": [
+      { name: "England", users: 620, sessions: 4200, growth: 13 },
+      { name: "Scotland", users: 150, sessions: 1100, growth: 9 },
+      { name: "Wales", users: 90, sessions: 650, growth: 8 },
+      { name: "Northern Ireland", users: 60, sessions: 350, growth: 7 },
+    ],
+    "Canada": [
+      { name: "Ontario", users: 290, sessions: 1900, growth: 20 },
+      { name: "Quebec", users: 210, sessions: 1400, growth: 15 },
+      { name: "British Columbia", users: 160, sessions: 1050, growth: 22 },
+      { name: "Alberta", users: 120, sessions: 750, growth: 17 },
+    ],
+  };
+
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+    setViewMode("state");
+  };
+
+  const handleBackToCountries = () => {
+    setSelectedCountry(null);
+    setViewMode("country");
+  };
+
+  const getCurrentGeoData = () => {
+    if (viewMode === "state" && selectedCountry && stateData[selectedCountry]) {
+      return stateData[selectedCountry];
+    }
+    return countryData;
+  };
 
   const fadeIn = {
     initial: { opacity: 0, y: 20 },
@@ -134,6 +188,7 @@ const Dashboard = () => {
           <TabsTrigger value="consultations">Consultations</TabsTrigger>
           <TabsTrigger value="users">User Analysis</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="geography">Geographic</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -491,6 +546,138 @@ const Dashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="geography">
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center">
+                    <Map className="h-5 w-5 mr-2 text-primary" />
+                    {viewMode === "country" ? "Country Distribution" : `${selectedCountry} - State/Province Distribution`}
+                  </CardTitle>
+                </div>
+                {viewMode === "state" && (
+                  <Button variant="ghost" size="sm" onClick={handleBackToCountries} className="flex items-center">
+                    <Globe className="h-4 w-4 mr-1" />
+                    Back to Countries
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="h-[500px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={getCurrentGeoData()}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 100,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-45} 
+                        textAnchor="end"
+                        height={80}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                      <Tooltip />
+                      <Legend />
+                      <Bar 
+                        yAxisId="left" 
+                        dataKey="users" 
+                        fill="#8884d8" 
+                        name="Active Users"
+                        onClick={viewMode === "country" ? (data) => handleCountrySelect(data.name) : null}
+                        cursor={viewMode === "country" ? "pointer" : "default"}
+                      />
+                      <Bar 
+                        yAxisId="right" 
+                        dataKey="growth" 
+                        fill="#82ca9d" 
+                        name="Growth Rate (%)" 
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {viewMode === "country" && (
+                  <p className="text-sm text-muted-foreground mt-4 text-center">
+                    Click on any country bar to view state/province breakdown
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Activity className="h-5 w-5 mr-2 text-primary" />
+                    {viewMode === "country" ? "User Activity by Country" : `User Activity in ${selectedCountry}`}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={getCurrentGeoData()}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="sessions"
+                          nameKey="name"
+                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {getCurrentGeoData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => [`${value} sessions`, 'Activity']} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                    Regional Growth Comparison
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={getCurrentGeoData()}
+                        margin={{
+                          top: 5,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="growth" stroke="#8884d8" activeDot={{ r: 8 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
