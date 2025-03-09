@@ -1,668 +1,682 @@
+
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BarChart2, LineChart, Upload, Loader2, FileText, Check, Info, AlertCircle } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { validateCSV, extractTimeSeriesData } from "@/utils/csvValidator";
-
-const mockTimeSeriesData = {
-  labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-  values: [65, 59, 80, 81, 56, 55, 40, 45, 60, 70, 75, 78],
-  forecast: [78, 82, 85, 89, 91, 95],
-  forecastLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-};
-
-type TimeSeriesData = {
-  labels: string[];
-  values: number[];
-  forecast?: number[];
-  forecastLabels?: string[];
-};
-
-type DatasetInfo = {
-  name: string;
-  description: string;
-  rows: number;
-  columns: number;
-  timeRange: string;
-  dataType: string;
-  uploadDate: Date;
-};
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
+import { 
+  Download, Filter, RefreshCcw, Search, 
+  Calendar, ArrowUpRight, TrendingUp, TrendingDown,
+  Globe, Zap, Users, Activity, ChevronDown
+} from "lucide-react";
 
 const Analyzer = () => {
-  const [activeTab, setActiveTab] = useState("upload");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [csvContent, setCsvContent] = useState("");
-  const [datasetInfo, setDatasetInfo] = useState<DatasetInfo | null>(null);
-  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData | null>(null);
-  const [selectedModel, setSelectedModel] = useState("auto");
-  const [forecasting, setForecasting] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [csvPreview, setCsvPreview] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("privacy");
+  const [dateRange, setDateRange] = useState("lastMonth");
+  const [region, setRegion] = useState("global");
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Mock data for privacy metrics
+  const privacyMetricsData = [
+    { month: "Jan", anonymousRate: 65, encryptionCoverage: 98, privacySatisfaction: 89 },
+    { month: "Feb", anonymousRate: 70, encryptionCoverage: 99, privacySatisfaction: 91 },
+    { month: "Mar", anonymousRate: 72, encryptionCoverage: 99, privacySatisfaction: 92 },
+    { month: "Apr", anonymousRate: 75, encryptionCoverage: 100, privacySatisfaction: 94 },
+    { month: "May", anonymousRate: 78, encryptionCoverage: 100, privacySatisfaction: 95 },
+    { month: "Jun", anonymousRate: 80, encryptionCoverage: 100, privacySatisfaction: 96 },
+  ];
 
-    setValidationErrors([]);
+  // Mock data for professional categories
+  const categoryData = [
+    { name: "Mentors", value: 42 },
+    { name: "Officials", value: 28 },
+    { name: "Medical", value: 30 },
+  ];
 
-    if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a CSV file.",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Mock data for service types
+  const serviceTypeData = [
+    { name: "Video Calls", value: 45 },
+    { name: "Live Chat", value: 35 },
+    { name: "Messaging", value: 20 },
+  ];
 
-    setIsUploading(true);
-    
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target?.result as string;
-          setCsvContent(content);
-          
-          const lines = content.split('\n');
-          const preview = lines.slice(0, Math.min(5, lines.length)).join('\n');
-          setCsvPreview(preview);
-          
-          const validationResult = validateCSV(content);
-          
-          if (validationResult.isValid && validationResult.data) {
-            const extractedData = extractTimeSeriesData(validationResult);
-            
-            if (extractedData) {
-              const mockInfo: DatasetInfo = {
-                name: file.name,
-                description: `Time series dataset with ${validationResult.data.valueColumns.length} value column(s)`,
-                rows: validationResult.data.rows.length,
-                columns: validationResult.data.headers.length,
-                timeRange: `${extractedData.labels[0]} - ${extractedData.labels[extractedData.labels.length - 1]}`,
-                dataType: "Numeric, Time Series",
-                uploadDate: new Date()
-              };
-              
-              setDatasetInfo(mockInfo);
-              
-              setTimeSeriesData({
-                labels: extractedData.labels,
-                values: extractedData.values,
-                forecast: mockTimeSeriesData.forecast,
-                forecastLabels: mockTimeSeriesData.forecastLabels
-              });
-              
-              setTimeout(() => {
-                setIsUploading(false);
-                setActiveTab("visualize");
-                toast({
-                  title: "Upload successful",
-                  description: `File "${file.name}" has been uploaded and validated.`,
-                });
-              }, 500);
-            } else {
-              handleValidationError(["Could not extract time series data from the CSV file."]);
-            }
-          } else {
-            handleValidationError(validationResult.errors);
-          }
-        };
-        
-        reader.readAsText(file);
-      }
-    }, 200);
-  };
+  // Mock data for consultation insights
+  const consultationData = [
+    { category: "Career", avgDuration: 38, satisfaction: 92, count: 1250 },
+    { category: "Legal", avgDuration: 45, satisfaction: 89, count: 980 },
+    { category: "Financial", avgDuration: 42, satisfaction: 88, count: 820 },
+    { category: "Mental Health", avgDuration: 55, satisfaction: 95, count: 1100 },
+    { category: "Medical", avgDuration: 32, satisfaction: 91, count: 750 },
+    { category: "Education", avgDuration: 40, satisfaction: 93, count: 650 },
+  ];
 
-  const handleValidationError = (errors: string[]) => {
-    setValidationErrors(errors);
-    setIsUploading(false);
-    toast({
-      title: "Validation Error",
-      description: "The CSV file has validation issues. Please check the details below.",
-      variant: "destructive",
-    });
-  };
+  // Mock data for regional distribution
+  const regionData = [
+    { name: "North America", value: 35 },
+    { name: "Europe", value: 25 },
+    { name: "Asia", value: 20 },
+    { name: "South America", value: 10 },
+    { name: "Africa", value: 5 },
+    { name: "Australia", value: 5 },
+  ];
 
-  const handleUseSampleData = () => {
-    setValidationErrors([]);
-    
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 20;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        
-        const sampleCsv = "date,value\n2023-01,65\n2023-02,59\n2023-03,80\n2023-04,81\n2023-05,56\n2023-06,55\n2023-07,40\n2023-08,45\n2023-09,60\n2023-10,70\n2023-11,75\n2023-12,78";
-        setCsvContent(sampleCsv);
-        setCsvPreview(sampleCsv);
-        
-        const mockInfo: DatasetInfo = {
-          name: "sample_sales_data.csv",
-          description: "Monthly sales data from 2023",
-          rows: 12,
-          columns: 2,
-          timeRange: "Jan 2023 - Dec 2023",
-          dataType: "Numeric, Time Series",
-          uploadDate: new Date()
-        };
-        
-        setDatasetInfo(mockInfo);
-        
-        setTimeSeriesData(mockTimeSeriesData);
-        
-        setTimeout(() => {
-          setIsUploading(false);
-          setActiveTab("visualize");
-          toast({
-            title: "Sample data loaded",
-            description: "Sample time series data has been loaded successfully.",
-          });
-        }, 500);
-      }
-    }, 100);
-  };
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82ca9d"];
 
-  const handleGenerateForecast = () => {
-    if (!timeSeriesData) return;
-    
-    setForecasting(true);
-    
-    setTimeout(() => {
-      setActiveTab("forecast");
-      setForecasting(false);
-      toast({
-        title: "Forecast generated",
-        description: `Forecast successfully generated using ${selectedModel === 'auto' ? 'Auto-selected' : selectedModel} model.`,
-      });
-    }, 2000);
+  const metrics = [
+    { 
+      title: "Privacy Score", 
+      value: "96%", 
+      change: "+5%",
+      trend: "up",
+      description: "Overall platform privacy rating" 
+    },
+    { 
+      title: "Anonymous Sessions", 
+      value: "78%",
+      change: "+3%",
+      trend: "up",
+      description: "Percentage of anonymous consultations" 
+    },
+    { 
+      title: "Encryption Coverage", 
+      value: "100%",
+      change: "+1%",
+      trend: "up",
+      description: "End-to-end encryption implementation" 
+    },
+    { 
+      title: "Satisfaction Rate", 
+      value: "94%",
+      change: "+2%",
+      trend: "up",
+      description: "User privacy satisfaction" 
+    },
+  ];
+
+  const fadeIn = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">PredictAI Analyzer</h1>
-        <p className="text-muted-foreground mt-2">
-          Upload time series data, visualize trends, and generate forecasts
-        </p>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <motion.div 
+        className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">SecureConnect Analyzer</h1>
+          <p className="text-muted-foreground">Detailed insights into platform usage, privacy, and consultations.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
+          <div className="flex items-center space-x-2">
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="lastWeek">Last 7 days</SelectItem>
+                <SelectItem value="lastMonth">Last 30 days</SelectItem>
+                <SelectItem value="lastQuarter">Last 90 days</SelectItem>
+                <SelectItem value="lastYear">Last 12 months</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={region} onValueChange={setRegion}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Select region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="global">Global</SelectItem>
+                <SelectItem value="northAmerica">North America</SelectItem>
+                <SelectItem value="europe">Europe</SelectItem>
+                <SelectItem value="asia">Asia</SelectItem>
+                <SelectItem value="other">Other Regions</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="icon">
+              <Filter className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
-          <TabsTrigger value="upload" disabled={isUploading}>
-            <Upload className="mr-2 h-4 w-4" />
-            Data Upload
-          </TabsTrigger>
-          <TabsTrigger value="visualize" disabled={!timeSeriesData || isUploading}>
-            <BarChart2 className="mr-2 h-4 w-4" />
-            Visualization
-          </TabsTrigger>
-          <TabsTrigger value="forecast" disabled={!timeSeriesData || isUploading}>
-            <LineChart className="mr-2 h-4 w-4" />
-            Forecast
-          </TabsTrigger>
+      {/* Metrics Cards */}
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        initial="initial"
+        animate="animate"
+        variants={{ animate: { transition: { staggerChildren: 0.05 } } }}
+      >
+        {metrics.map((metric, index) => (
+          <motion.div key={index} variants={fadeIn}>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{metric.title}</p>
+                    <p className="text-3xl font-bold">{metric.value}</p>
+                  </div>
+                  <div className={`flex items-center ${
+                    metric.trend === "up" ? "text-green-500" : "text-red-500"
+                  }`}>
+                    {metric.trend === "up" ? 
+                      <TrendingUp className="h-4 w-4 mr-1" /> : 
+                      <TrendingDown className="h-4 w-4 mr-1" />
+                    }
+                    <span className="text-sm font-medium">{metric.change}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">{metric.description}</p>
+                <div className="mt-4 pt-4 border-t">
+                  <Button variant="ghost" size="sm" className="w-full flex items-center justify-center">
+                    <span className="text-xs">View Details</span>
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <Tabs defaultValue="privacy" value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsList className="mb-6 bg-muted/40">
+          <TabsTrigger value="privacy">Privacy Analysis</TabsTrigger>
+          <TabsTrigger value="consultations">Consultation Insights</TabsTrigger>
+          <TabsTrigger value="professionals">Professional Categories</TabsTrigger>
+          <TabsTrigger value="regional">Regional Analysis</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2">
+        <TabsContent value="privacy">
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
               <CardHeader>
-                <CardTitle>Upload Time Series Data</CardTitle>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2 text-primary" />
+                  Privacy Metrics Trend
+                </CardTitle>
                 <CardDescription>
-                  Upload a CSV file containing your time series data
+                  Analyzing the evolution of privacy metrics over time
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!isUploading ? (
-                  <div className="space-y-6">
-                    {validationErrors.length > 0 && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Validation Errors</AlertTitle>
-                        <AlertDescription>
-                          <ul className="list-disc pl-4 mt-2 space-y-1">
-                            {validationErrors.map((error, index) => (
-                              <li key={index}>{error}</li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {csvPreview && (
-                      <div className="border rounded-md p-4 bg-muted/30">
-                        <h3 className="text-sm font-medium mb-2">CSV Preview:</h3>
-                        <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{csvPreview}</pre>
-                      </div>
-                    )}
-                  
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-                      <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Drop your CSV file here or click to browse</h3>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Your CSV file must contain exactly 2 columns:
-                      </p>
-                      <ul className="text-sm text-muted-foreground mb-4 list-disc inline-block text-left">
-                        <li><span className="font-medium">Column 1:</span> Date/time values (e.g., "date", "time", "year-month")</li>
-                        <li><span className="font-medium">Column 2:</span> Numeric values (e.g., "sales", "temperature")</li>
-                      </ul>
-                      <p className="text-sm text-muted-foreground mb-6">
-                        Example format: <code className="bg-muted px-1 py-0.5 rounded">date,value</code> or <code className="bg-muted px-1 py-0.5 rounded">month,sales</code>
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button onClick={() => document.getElementById('file-upload')?.click()}>
-                          <Upload className="mr-2 h-4 w-4" /> Upload CSV File
-                        </Button>
-                        <input
-                          id="file-upload"
-                          type="file"
-                          accept=".csv"
-                          className="hidden"
-                          onChange={handleFileUpload}
-                        />
-                        <Button variant="outline" onClick={handleUseSampleData}>
-                          <FileText className="mr-2 h-4 w-4" /> Use Sample Data
-                        </Button>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={privacyMetricsData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="anonymousRate" 
+                        stroke="#8884d8" 
+                        activeDot={{ r: 8 }}
+                        name="Anonymous Rate (%)" 
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="encryptionCoverage" 
+                        stroke="#82ca9d" 
+                        name="Encryption Coverage (%)" 
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="privacySatisfaction" 
+                        stroke="#ffc658" 
+                        name="Privacy Satisfaction (%)" 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Privacy Components Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: "End-to-End Encryption", score: 98 },
+                          { name: "Anonymity Options", score: 95 },
+                          { name: "Data Protection", score: 97 },
+                          { name: "Consent Management", score: 94 },
+                          { name: "Data Retention", score: 92 },
+                          { name: "Access Control", score: 96 },
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" tick={{fontSize: 12}} />
+                        <YAxis domain={[80, 100]} />
+                        <Tooltip />
+                        <Bar dataKey="score" fill="#8884d8" name="Score (%)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Privacy Compliance Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">GDPR Compliance</span>
+                      <div className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        <span className="text-sm">Fully Compliant</span>
                       </div>
                     </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-green-500 h-2.5 rounded-full" style={{ width: "100%" }}></div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">HIPAA Compliance</span>
+                      <div className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        <span className="text-sm">Fully Compliant</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-green-500 h-2.5 rounded-full" style={{ width: "100%" }}></div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">ISO 27001</span>
+                      <div className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        <span className="text-sm">Certified</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-green-500 h-2.5 rounded-full" style={{ width: "100%" }}></div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">CCPA Compliance</span>
+                      <div className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        <span className="text-sm">Fully Compliant</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className="bg-green-500 h-2.5 rounded-full" style={{ width: "100%" }}></div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="p-6 text-center">
-                    <Loader2 className="h-12 w-12 mx-auto text-primary animate-spin mb-4" />
-                    <h3 className="text-lg font-medium mb-4">Processing your data...</h3>
-                    <Progress value={uploadProgress} className="h-2 mb-2" />
-                    <p className="text-sm text-muted-foreground">{uploadProgress}% complete</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="consultations">
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Consultation Categories Performance</CardTitle>
+                <CardDescription>
+                  Average duration, satisfaction and volume by consultation category
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={consultationData}
+                      layout="vertical"
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 50,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="category" />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="avgDuration" fill="#8884d8" name="Avg. Duration (min)" />
+                      <Bar dataKey="satisfaction" fill="#82ca9d" name="Satisfaction (%)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Service Type Distribution</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={serviceTypeData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={true}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        >
+                          {serviceTypeData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Consultation Volume by Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={[
+                          { time: "6 AM", volume: 10 },
+                          { time: "9 AM", volume: 45 },
+                          { time: "12 PM", volume: 75 },
+                          { time: "3 PM", volume: 85 },
+                          { time: "6 PM", volume: 95 },
+                          { time: "9 PM", volume: 60 },
+                          { time: "12 AM", volume: 25 },
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="time" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="volume" stroke="#8884d8" activeDot={{ r: 8 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="professionals">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Professional Category Distribution</CardTitle>
+                <CardDescription>
+                  Breakdown of consultations by professional category
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>CSV Format Requirements</CardTitle>
+                <CardTitle>Professional Experience Level</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { category: "Mentors", junior: 25, mid: 45, senior: 30 },
+                        { category: "Officials", junior: 15, mid: 35, senior: 50 },
+                        { category: "Medical", junior: 10, mid: 30, senior: 60 },
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="category" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="junior" stackId="a" fill="#8884d8" name="Junior (1-3 yrs)" />
+                      <Bar dataKey="mid" stackId="a" fill="#82ca9d" name="Mid-level (4-7 yrs)" />
+                      <Bar dataKey="senior" stackId="a" fill="#ffc658" name="Senior (8+ yrs)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Professional Specialization</CardTitle>
                 <CardDescription>
-                  How to prepare your data for analysis
+                  Distribution of specialties within each professional category
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="font-medium flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    Required Columns
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your CSV must include exactly 2 columns:
-                  </p>
-                  <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
-                    <li>Column 1: A date/time column (named "date", "time", "month", etc.)</li>
-                    <li>Column 2: A numeric value column (named "value", "sales", etc.)</li>
-                  </ul>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="font-medium flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    Date Format
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Date columns should follow one of these formats:
-                  </p>
-                  <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
-                    <li>YYYY-MM-DD (e.g., 2023-12-31)</li>
-                    <li>MM/DD/YYYY (e.g., 12/31/2023)</li>
-                    <li>Month abbreviations (e.g., Jan, Feb, Mar)</li>
-                    <li>Year-Month (e.g., 2023-01, 2023-02)</li>
-                  </ul>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="font-medium flex items-center">
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                    Value Format
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Numeric values:
-                  </p>
-                  <ul className="text-sm text-muted-foreground list-disc pl-6 space-y-1">
-                    <li>Must be plain numbers (e.g., 123, 45.67)</li>
-                    <li>Should not include currency symbols or other special characters</li>
-                    <li>Use a period (.) as the decimal separator</li>
-                  </ul>
-                </div>
-                
-                <div className="border rounded-md p-3 bg-blue-50">
-                  <h3 className="text-sm font-medium text-blue-700 mb-2">Example Format:</h3>
-                  <pre className="text-xs text-blue-700 whitespace-pre-wrap">
-date,sales
-2023-01,1245.50
-2023-02,1100.75
-2023-03,1350.25
-                  </pre>
-                </div>
-                
-                <div className="p-3 bg-amber-50 rounded-md flex items-start mt-4">
-                  <Info className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-700">
-                    For best results, ensure your data does not contain missing values or inconsistent formatting.
-                  </p>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: "Career Development", mentors: 35, officials: 5, medical: 0 },
+                        { name: "Leadership", mentors: 25, officials: 10, medical: 0 },
+                        { name: "Technical Skills", mentors: 40, officials: 0, medical: 0 },
+                        { name: "Legal Advice", mentors: 0, officials: 40, medical: 0 },
+                        { name: "Financial Guidance", mentors: 0, officials: 30, medical: 0 },
+                        { name: "Government Services", mentors: 0, officials: 15, medical: 5 },
+                        { name: "Mental Health", mentors: 0, officials: 0, medical: 40 },
+                        { name: "Physical Health", mentors: 0, officials: 0, medical: 35 },
+                        { name: "Wellness", mentors: 0, officials: 0, medical: 20 },
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="mentors" fill="#8884d8" name="Mentors" />
+                      <Bar dataKey="officials" fill="#82ca9d" name="Officials" />
+                      <Bar dataKey="medical" fill="#ffc658" name="Medical" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="visualize">
-          {timeSeriesData && datasetInfo && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div>
-                    <CardTitle>Time Series Visualization</CardTitle>
-                    <CardDescription>
-                      Visual representation of your uploaded data
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline" className="ml-2">
-                    {datasetInfo.rows} data points
-                  </Badge>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="h-[300px] w-full bg-gray-50 rounded-md flex items-center justify-center mb-4">
-                    <div className="relative w-full h-full p-4">
-                      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200"></div>
-                      <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200"></div>
-                      
-                      <div className="relative h-full w-full flex items-end">
-                        {timeSeriesData.values.map((value, index) => (
-                          <div 
-                            key={index} 
-                            className="flex-1 mx-[1px] bg-primary/80 hover:bg-primary transition-colors"
-                            style={{ height: `${(value / 100) * 80}%` }}
-                            title={`${timeSeriesData.labels[index]}: ${value}`}
-                          ></div>
+        <TabsContent value="regional">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Globe className="h-5 w-5 mr-2 text-primary" />
+                  Regional Distribution
+                </CardTitle>
+                <CardDescription>
+                  User distribution across global regions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={regionData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {regionData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
-                      </div>
-                      
-                      <div className="absolute bottom-[-24px] left-0 right-0 flex justify-between px-2">
-                        <span className="text-xs text-muted-foreground">{timeSeriesData.labels[0]}</span>
-                        <span className="text-xs text-muted-foreground">{timeSeriesData.labels[timeSeriesData.labels.length - 1]}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-medium">Dataset: {datasetInfo.name}</p>
-                      <p className="text-xs text-muted-foreground">Time Range: {datasetInfo.timeRange}</p>
-                    </div>
-                    <Button onClick={handleGenerateForecast}>
-                      Generate Forecast
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Dataset Information</CardTitle>
-                  <CardDescription>
-                    Summary of your uploaded time series data
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">File Name</p>
-                      <p className="font-medium">{datasetInfo.name}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Upload Date</p>
-                      <p className="font-medium">{datasetInfo.uploadDate.toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Rows</p>
-                      <p className="font-medium">{datasetInfo.rows}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Columns</p>
-                      <p className="font-medium">{datasetInfo.columns}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Time Range</p>
-                      <p className="font-medium">{datasetInfo.timeRange}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Data Type</p>
-                      <p className="font-medium">{datasetInfo.dataType}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-medium mb-2">Select Forecasting Model</p>
-                    <select 
-                      className="w-full p-2 border rounded-md"
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
+            <Card>
+              <CardHeader>
+                <CardTitle>Language Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { language: "English", users: 45 },
+                        { language: "Spanish", users: 15 },
+                        { language: "French", users: 8 },
+                        { language: "German", users: 7 },
+                        { language: "Chinese", users: 12 },
+                        { language: "Hindi", users: 6 },
+                        { language: "Others", users: 7 },
+                      ]}
                     >
-                      <option value="auto">Auto-select (Recommended)</option>
-                      <option value="arima">ARIMA</option>
-                      <option value="prophet">Prophet</option>
-                      <option value="lstm">LSTM (Deep Learning)</option>
-                      <option value="xgboost">XGBoost</option>
-                    </select>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Auto-select analyzes your data and chooses the best model automatically.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </TabsContent>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="language" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="users" fill="#8884d8" name="Users (%)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="forecast">
-          {timeSeriesData && datasetInfo && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div>
-                    <CardTitle>Forecast Results</CardTitle>
-                    <CardDescription>
-                      Forecasted values for the next 6 months
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                    {selectedModel === 'auto' ? 'Auto-selected' : selectedModel} Model
-                  </Badge>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  {forecasting ? (
-                    <div className="h-[300px] w-full flex items-center justify-center">
-                      <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="h-[300px] w-full bg-gray-50 rounded-md flex items-center justify-center mb-4">
-                        <div className="relative w-full h-full p-4">
-                          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gray-200"></div>
-                          <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-200"></div>
-                          
-                          <div className="relative h-full w-full flex items-end">
-                            {timeSeriesData.values.map((value, index) => (
-                              <div 
-                                key={`hist-${index}`} 
-                                className="flex-1 mx-[1px] bg-primary/80"
-                                style={{ height: `${(value / 100) * 80}%` }}
-                                title={`${timeSeriesData.labels[index]}: ${value}`}
-                              ></div>
-                            ))}
-                            
-                            {timeSeriesData.forecast?.map((value, index) => (
-                              <div 
-                                key={`forecast-${index}`}
-                                className="flex-1 mx-[1px] bg-blue-300 border-2 border-dashed border-blue-500"
-                                style={{ height: `${(value / 100) * 80}%` }}
-                                title={`${timeSeriesData.forecastLabels?.[index]}: ${value} (Forecast)`}
-                              ></div>
-                            ))}
-                          </div>
-                          
-                          <div className="absolute top-2 right-2 flex items-center space-x-4">
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-primary mr-1"></div>
-                              <span className="text-xs">Historical</span>
-                            </div>
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-blue-300 border border-dashed border-blue-500 mr-1"></div>
-                              <span className="text-xs">Forecast</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card className="bg-muted/30">
-                            <CardContent className="p-4">
-                              <h3 className="text-sm font-medium mb-2">Forecast Accuracy</h3>
-                              <div className="flex items-center">
-                                <Progress value={85} className="h-2 flex-1 mr-2" />
-                                <span className="text-sm font-medium">85%</span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                          
-                          <Card className="bg-muted/30">
-                            <CardContent className="p-4">
-                              <h3 className="text-sm font-medium mb-2">Error Rate (RMSE)</h3>
-                              <p className="text-2xl font-bold">4.23</p>
-                            </CardContent>
-                          </Card>
-                        </div>
-                        
-                        <Button>
-                          Export Forecast Results
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Forecast Details</CardTitle>
-                  <CardDescription>
-                    Predicted values for future periods
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {forecasting ? (
-                    <div className="h-[200px] flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="border rounded-md overflow-hidden">
-                        <table className="w-full text-sm">
-                          <thead className="bg-muted">
-                            <tr>
-                              <th className="p-2 text-left">Period</th>
-                              <th className="p-2 text-right">Forecast</th>
-                              <th className="p-2 text-right">Confidence</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {timeSeriesData.forecastLabels?.map((label, index) => (
-                              <tr key={index} className="border-t">
-                                <td className="p-2">{label}</td>
-                                <td className="p-2 text-right font-medium">{timeSeriesData.forecast?.[index]}</td>
-                                <td className="p-2 text-right">±2.1</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      
-                      <div className="p-3 bg-blue-50 rounded-md flex items-start">
-                        <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-blue-700">
-                          <p className="font-medium mb-1">Forecast Interpretation</p>
-                          <p>The model indicates an upward trend with seasonal variations. Peak values are predicted in May.</p>
-                        </div>
-                      </div>
-                      
-                      <Button variant="outline" className="w-full" onClick={() => setActiveTab("visualize")}>
-                        Modify Model Parameters
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Regional Usage Patterns</CardTitle>
+                <CardDescription>
+                  Consultation patterns across different regions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { region: "North America", video: 65, chat: 25, messaging: 10 },
+                        { region: "Europe", video: 55, chat: 35, messaging: 10 },
+                        { region: "Asia", video: 35, chat: 40, messaging: 25 },
+                        { region: "South America", video: 45, chat: 35, messaging: 20 },
+                        { region: "Africa", video: 30, chat: 40, messaging: 30 },
+                        { region: "Australia", video: 60, chat: 30, messaging: 10 },
+                      ]}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="region" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="video" stackId="a" fill="#8884d8" name="Video Calls (%)" />
+                      <Bar dataKey="chat" stackId="a" fill="#82ca9d" name="Live Chat (%)" />
+                      <Bar dataKey="messaging" stackId="a" fill="#ffc658" name="Messaging (%)" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>How PredictAI Works</CardTitle>
-          <CardDescription>
-            Our forecasting process explained
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Upload className="h-5 w-5 text-primary" />
+      {/* Search Section */}
+      <motion.div 
+        className="mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Search className="h-5 w-5 mr-2 text-primary" />
+              Advanced Analytics Search
+            </CardTitle>
+            <CardDescription>
+              Search for specific metrics and create custom reports
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <Label htmlFor="search-query">Search Query</Label>
+                <div className="flex mt-1">
+                  <Input id="search-query" placeholder="Search for metrics, regions, categories..." />
+                  <Button className="ml-2">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                </div>
               </div>
-              <h3 className="font-semibold">1. Upload Data</h3>
-              <p className="text-sm text-muted-foreground">
-                Upload your time series data in CSV format. We automatically process and prepare it for analysis.
-              </p>
-            </div>
-            
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <BarChart2 className="h-5 w-5 text-primary" />
+              <div className="w-full md:w-auto flex flex-col">
+                <Label className="mb-1">Quick Filters</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm">Privacy Metrics</Button>
+                  <Button variant="outline" size="sm">Top Regions</Button>
+                  <Button variant="outline" size="sm">Growth Trends</Button>
+                </div>
               </div>
-              <h3 className="font-semibold">2. Visualize & Analyze</h3>
-              <p className="text-sm text-muted-foreground">
-                Explore your data with interactive charts. Our AI analyzes patterns, trends, and seasonality.
-              </p>
             </div>
-            
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <LineChart className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="font-semibold">3. Generate Forecasts</h3>
-              <p className="text-sm text-muted-foreground">
-                Our ML models predict future values with high accuracy. Export results for use in your business.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 };

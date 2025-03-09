@@ -1,212 +1,290 @@
 
 import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MessageSquare, BarChart2, Lightbulb, Table, Bot, TrendingUp, Calendar, LineChart, Activity } from "lucide-react";
+import { Shield, Users, Lock, Globe, Award, FileCheck, Building, HeartPulse } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const About = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
+  const fadeIn = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6 }
+  };
+
+  const staggerContainer = {
+    initial: {},
+    animate: {
       transition: {
         staggerChildren: 0.1
       }
     }
   };
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
+  const teamMembers = [
+    {
+      name: "Dr. Sarah Johnson",
+      role: "Chief Privacy Officer",
+      description: "With 15+ years in data security, Sarah leads our privacy initiatives and compliance strategies.",
+      icon: <Shield className="h-8 w-8 text-primary" />
+    },
+    {
+      name: "Michael Chen",
+      role: "Head of Professional Network",
+      description: "Michael oversees our global network of mentors, officials, and practitioners to ensure quality.",
+      icon: <Users className="h-8 w-8 text-primary" />
+    },
+    {
+      name: "Elena Rodriguez",
+      role: "Technology Director",
+      description: "Elena architects our secure infrastructure, focusing on end-to-end encryption and user anonymity.",
+      icon: <Lock className="h-8 w-8 text-primary" />
+    }
+  ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <motion.div
-        className="max-w-4xl mx-auto"
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
+    <div className="container mx-auto px-4 py-16">
+      {/* Hero Section */}
+      <motion.section 
+        className="text-center mb-20"
+        initial="initial"
+        animate="animate"
+        variants={staggerContainer}
       >
-        <motion.div variants={itemVariants}>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">About PredictAI</h1>
-          <p className="text-muted-foreground mb-8 max-w-3xl">
-            Transforming time series data into actionable business insights through advanced forecasting analysis
+        <motion.h1 
+          className="text-4xl md:text-5xl font-bold tracking-tight mb-6"
+          variants={fadeIn}
+        >
+          About <span className="text-primary">SecureConnect</span>
+        </motion.h1>
+        <motion.p 
+          className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8"
+          variants={fadeIn}
+        >
+          Founded on the principles of privacy, security, and accessibility, SecureConnect is revolutionizing how people connect with professionals for guidance and support.
+        </motion.p>
+        <motion.div 
+          className="w-24 h-1 bg-primary mx-auto mb-8"
+          variants={fadeIn}
+        ></motion.div>
+      </motion.section>
+
+      {/* Mission Section */}
+      <motion.section 
+        className="grid md:grid-cols-2 gap-12 mb-24 items-center"
+        initial="initial"
+        animate="animate"
+        variants={staggerContainer}
+      >
+        <motion.div variants={fadeIn}>
+          <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
+          <p className="text-lg text-muted-foreground mb-6">
+            We believe that everyone deserves access to quality professional guidance without sacrificing their privacy. Our mission is to create a secure platform where users can connect anonymously with verified professionals from around the world.
+          </p>
+          <p className="text-lg text-muted-foreground mb-6">
+            Whether you're seeking career mentorship, legal advice, or mental health support, SecureConnect provides the tools and technology to facilitate these connections with privacy at the core.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center">
+              <Lock className="h-5 w-5 text-primary mr-2" />
+              <span className="text-sm font-medium">End-to-End Encryption</span>
+            </div>
+            <div className="flex items-center">
+              <Globe className="h-5 w-5 text-primary mr-2" />
+              <span className="text-sm font-medium">Global Access</span>
+            </div>
+            <div className="flex items-center">
+              <Award className="h-5 w-5 text-primary mr-2" />
+              <span className="text-sm font-medium">Certified Professionals</span>
+            </div>
+          </div>
+        </motion.div>
+        <motion.div 
+          className="relative rounded-lg overflow-hidden h-80 bg-gradient-to-r from-primary/20 to-blue-100"
+          variants={fadeIn}
+        >
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Shield className="h-32 w-32 text-primary/40" />
+          </div>
+        </motion.div>
+      </motion.section>
+
+      {/* Team Section */}
+      <motion.section 
+        className="mb-24"
+        initial="initial"
+        animate="animate"
+        variants={staggerContainer}
+      >
+        <motion.div className="text-center mb-12" variants={fadeIn}>
+          <h2 className="text-3xl font-bold mb-4">Our Leadership Team</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Meet the experts behind SecureConnect who are passionate about privacy and professional connections.
           </p>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <Card className="mb-12 overflow-hidden card-glass">
-            <CardContent className="p-0">
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="p-8">
-                  <Badge className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-100">
-                    Our Mission
-                  </Badge>
-                  <h2 className="text-2xl font-bold mb-4">Turning Data into Foresight</h2>
-                  <p className="text-gray-600 mb-6">
-                    PredictAI is dedicated to helping businesses understand future trends through advanced time series analysis and forecasting algorithms.
-                  </p>
-                  <p className="text-gray-600">
-                    We transform historical data into clear, actionable predictions that drive strategic planning, optimize operations, and boost business growth.
-                  </p>
-                </div>
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-center p-8">
-                  <div className="max-w-xs text-center">
-                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-subtle">
-                      <LineChart className="h-10 w-10 text-blue-600" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Data-Driven Predictions</h3>
-                    <p className="text-sm text-gray-600">
-                      Move beyond guesswork with AI-powered time series analysis that reveals what your future metrics will look like.
-                    </p>
-                  </div>
-                </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          {teamMembers.map((member, index) => (
+            <motion.div 
+              key={index}
+              className="bg-white p-6 rounded-lg shadow-md"
+              variants={fadeIn}
+            >
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                {member.icon}
               </div>
-            </CardContent>
-          </Card>
+              <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
+              <p className="text-sm text-primary font-medium mb-4">{member.role}</p>
+              <p className="text-muted-foreground">{member.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* Values Section */}
+      <motion.section 
+        className="mb-24"
+        initial="initial"
+        animate="animate"
+        variants={staggerContainer}
+      >
+        <motion.div className="text-center mb-12" variants={fadeIn}>
+          <h2 className="text-3xl font-bold mb-4">Our Core Values</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            The principles that guide every decision we make at SecureConnect.
+          </p>
         </motion.div>
 
-        <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-bold mb-6">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <Card className="card-glass">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mb-4">
-                  <Table className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">1. Data Collection</h3>
-                <p className="text-sm text-gray-600">
-                  Upload your time series data in CSV format, with a date column and at least one numeric value column.
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="card-glass">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mb-4">
-                  <Bot className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">2. AI Analysis</h3>
-                <p className="text-sm text-gray-600">
-                  Our advanced algorithms process the data to identify patterns, seasonality, and trends.
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card className="card-glass">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 mb-4">
-                  <BarChart2 className="h-6 w-6" />
-                </div>
-                <h3 className="font-semibold text-lg mb-2">3. Forecast Generation</h3>
-                <p className="text-sm text-gray-600">
-                  View organized, visual predictions that highlight future trends and potential opportunities.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-bold mb-6">Key Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-12">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Temporal Pattern Detection</h3>
-                <p className="text-sm text-gray-600">
-                  Automatically identify seasonal patterns, cycles, and anomalies in your time series data.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Trend Analysis</h3>
-                <p className="text-sm text-gray-600">
-                  Track long-term trends and forecast future values with confidence intervals.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <Activity className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Anomaly Detection</h3>
-                <p className="text-sm text-gray-600">
-                  Identify outliers and anomalies that might represent opportunities or threats.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <BarChart2 className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Visual Dashboard</h3>
-                <p className="text-sm text-gray-600">
-                  Intuitive charts and graphs that make complex time series data easy to understand.
-                </p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <h2 className="text-2xl font-bold mb-6">Technical Approach</h2>
-          <Card className="card-glass mb-12">
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-semibold mb-2">Data Preprocessing</h3>
-                  <p className="text-sm text-gray-600">
-                    We clean and normalize time series data, handling missing values, resampling, and feature engineering before processing.
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold mb-2">Time Series Models</h3>
-                  <p className="text-sm text-gray-600">
-                    Our system employs statistical models (ARIMA, Exponential Smoothing) and machine learning approaches (Prophet, LSTM) for forecasting.
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold mb-2">Forecasting Algorithms</h3>
-                  <p className="text-sm text-gray-600">
-                    We use a combination of classical statistical methods and deep learning models to generate accurate predictions with confidence intervals.
-                  </p>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold mb-2">Data Visualization</h3>
-                  <p className="text-sm text-gray-600">
-                    Interactive charts and dashboards built with modern visualization libraries help translate complex time series data into clear insights.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 text-center mb-8">
-            <h2 className="text-2xl font-bold mb-4">Ready to forecast your future metrics?</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto mb-0">
-              Start analyzing your time series data today and discover predictions that can transform your business planning.
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <Lock className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Privacy First</h3>
+            <p className="text-muted-foreground">
+              We prioritize user privacy in everything we build, ensuring complete anonymity when desired.
             </p>
-          </div>
+          </motion.div>
+
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <Globe className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Global Access</h3>
+            <p className="text-muted-foreground">
+              We remove geographic barriers to professional guidance with our worldwide network.
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <Award className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Quality Assurance</h3>
+            <p className="text-muted-foreground">
+              We verify all professionals on our platform to ensure users receive expert guidance.
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <FileCheck className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Compliance</h3>
+            <p className="text-muted-foreground">
+              We adhere to global privacy standards including GDPR and HIPAA regulations.
+            </p>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Industries Section */}
+      <motion.section 
+        className="mb-24"
+        initial="initial"
+        animate="animate"
+        variants={staggerContainer}
+      >
+        <motion.div className="text-center mb-12" variants={fadeIn}>
+          <h2 className="text-3xl font-bold mb-4">Industries We Serve</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            SecureConnect provides privacy-focused consultation across multiple professional domains.
+          </p>
         </motion.div>
-      </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <Building className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Business & Career</h3>
+            <p className="text-muted-foreground mb-4">
+              Professional mentorship, career coaching, and business consultations.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/secure-connect">Learn More</Link>
+            </Button>
+          </motion.div>
+
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <FileCheck className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Legal & Official</h3>
+            <p className="text-muted-foreground mb-4">
+              Legal advice, financial guidance, and government service navigation.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/secure-connect">Learn More</Link>
+            </Button>
+          </motion.div>
+
+          <motion.div 
+            className="bg-white p-6 rounded-lg shadow-md"
+            variants={fadeIn}
+          >
+            <HeartPulse className="h-10 w-10 text-primary mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Health & Wellness</h3>
+            <p className="text-muted-foreground mb-4">
+              Medical consultations, therapy sessions, and wellness coaching.
+            </p>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/secure-connect">Learn More</Link>
+            </Button>
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* CTA Section */}
+      <motion.section 
+        className="bg-primary/5 rounded-2xl p-8 text-center"
+        initial="initial"
+        animate="animate"
+        variants={staggerContainer}
+      >
+        <motion.h2 
+          className="text-3xl font-bold mb-4"
+          variants={fadeIn}
+        >
+          Ready to Connect Securely?
+        </motion.h2>
+        <motion.p 
+          className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6"
+          variants={fadeIn}
+        >
+          Join thousands of users who trust SecureConnect for private professional guidance.
+        </motion.p>
+        <motion.div variants={fadeIn}>
+          <Button size="lg" asChild>
+            <Link to="/secure-connect">Get Started</Link>
+          </Button>
+        </motion.div>
+      </motion.section>
     </div>
   );
 };
