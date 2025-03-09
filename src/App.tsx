@@ -10,6 +10,7 @@ import Analyzer from "./pages/Analyzer";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
+import SecureConnect from "./pages/SecureConnect";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
           <Route path="/analyzer" element={<Layout><Analyzer /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
+          <Route path="/secure-connect" element={<Layout><SecureConnect /></Layout>} />
           <Route path="*" element={<Layout><NotFound /></Layout>} />
         </Routes>
       </BrowserRouter>
