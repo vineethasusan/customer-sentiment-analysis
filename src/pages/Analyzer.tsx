@@ -14,7 +14,7 @@ import {
 import { 
   Download, Filter, RefreshCcw, Search, 
   Calendar, ArrowUpRight, TrendingUp, TrendingDown,
-  Globe, Zap, Users, Activity, ChevronDown
+  Globe, Zap, Users, Activity, ChevronDown, Shield
 } from "lucide-react";
 
 const Analyzer = () => {
