@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { 
   Users, Shield, Video, MessageSquare, TrendingUp, 
   Activity, Globe, Calendar, Check, AlertTriangle,
-  Map, ChevronRight
+  Map, ChevronRight, Info
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,20 @@ import {
 } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
 
 const Dashboard = () => {
   const [timeRange, setTimeRange] = useState("month");
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [viewMode, setViewMode] = useState("country"); // "country" or "state"
+  const [selectedTab, setSelectedTab] = useState("overview");
   
   const consultationData = [
     { name: "Jan", mentors: 65, officials: 45, medical: 35 },
@@ -68,38 +77,38 @@ const Dashboard = () => {
   ];
 
   const countryData = [
-    { name: "United States", users: 1850, sessions: 12500, growth: 15 },
-    { name: "United Kingdom", users: 920, sessions: 6300, growth: 12 },
-    { name: "Canada", users: 780, sessions: 5100, growth: 18 },
-    { name: "Germany", users: 650, sessions: 4300, growth: 9 },
-    { name: "Australia", users: 520, sessions: 3200, growth: 14 },
-    { name: "France", users: 480, sessions: 2900, growth: 7 },
-    { name: "India", users: 420, sessions: 2600, growth: 22 },
-    { name: "Brazil", users: 380, sessions: 2200, growth: 19 },
-    { name: "Japan", users: 340, sessions: 1800, growth: 5 },
-    { name: "South Africa", users: 190, sessions: 1100, growth: 11 },
+    { name: "United States", users: 1850, sessions: 12500, growth: 15, available: 32 },
+    { name: "United Kingdom", users: 920, sessions: 6300, growth: 12, available: 18 },
+    { name: "Canada", users: 780, sessions: 5100, growth: 18, available: 15 },
+    { name: "Germany", users: 650, sessions: 4300, growth: 9, available: 14 },
+    { name: "Australia", users: 520, sessions: 3200, growth: 14, available: 11 },
+    { name: "France", users: 480, sessions: 2900, growth: 7, available: 10 },
+    { name: "India", users: 420, sessions: 2600, growth: 22, available: 8 },
+    { name: "Brazil", users: 380, sessions: 2200, growth: 19, available: 7 },
+    { name: "Japan", users: 340, sessions: 1800, growth: 5, available: 6 },
+    { name: "South Africa", users: 190, sessions: 1100, growth: 11, available: 5 },
   ];
 
   const stateData = {
     "United States": [
-      { name: "California", users: 480, sessions: 3200, growth: 17 },
-      { name: "New York", users: 390, sessions: 2600, growth: 14 },
-      { name: "Texas", users: 320, sessions: 2100, growth: 19 },
-      { name: "Florida", users: 280, sessions: 1900, growth: 16 },
-      { name: "Illinois", users: 210, sessions: 1400, growth: 11 },
-      { name: "Others", users: 170, sessions: 1300, growth: 13 },
+      { name: "California", users: 480, sessions: 3200, growth: 17, available: 12 },
+      { name: "New York", users: 390, sessions: 2600, growth: 14, available: 10 },
+      { name: "Texas", users: 320, sessions: 2100, growth: 19, available: 8 },
+      { name: "Florida", users: 280, sessions: 1900, growth: 16, available: 7 },
+      { name: "Illinois", users: 210, sessions: 1400, growth: 11, available: 5 },
+      { name: "Others", users: 170, sessions: 1300, growth: 13, available: 4 },
     ],
     "United Kingdom": [
-      { name: "England", users: 620, sessions: 4200, growth: 13 },
-      { name: "Scotland", users: 150, sessions: 1100, growth: 9 },
-      { name: "Wales", users: 90, sessions: 650, growth: 8 },
-      { name: "Northern Ireland", users: 60, sessions: 350, growth: 7 },
+      { name: "England", users: 620, sessions: 4200, growth: 13, available: 12 },
+      { name: "Scotland", users: 150, sessions: 1100, growth: 9, available: 6 },
+      { name: "Wales", users: 90, sessions: 650, growth: 8, available: 3 },
+      { name: "Northern Ireland", users: 60, sessions: 350, growth: 7, available: 2 },
     ],
     "Canada": [
-      { name: "Ontario", users: 290, sessions: 1900, growth: 20 },
-      { name: "Quebec", users: 210, sessions: 1400, growth: 15 },
-      { name: "British Columbia", users: 160, sessions: 1050, growth: 22 },
-      { name: "Alberta", users: 120, sessions: 750, growth: 17 },
+      { name: "Ontario", users: 290, sessions: 1900, growth: 20, available: 7 },
+      { name: "Quebec", users: 210, sessions: 1400, growth: 15, available: 5 },
+      { name: "British Columbia", users: 160, sessions: 1050, growth: 22, available: 4 },
+      { name: "Alberta", users: 120, sessions: 750, growth: 17, available: 3 },
     ],
   };
 
@@ -118,6 +127,11 @@ const Dashboard = () => {
       return stateData[selectedCountry];
     }
     return countryData;
+  };
+
+  const handleJoinRoom = (region) => {
+    console.log(`Joining room for ${region} with ${getCurrentGeoData().find(item => item.name === region)?.available} available users`);
+    // Implementation for joining room would go here
   };
 
   const fadeIn = {
@@ -183,13 +197,20 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Tabs for different analysis */}
-      <Tabs defaultValue="overview" className="mb-8">
+      <Tabs defaultValue={selectedTab} value={selectedTab} onValueChange={setSelectedTab} className="mb-8">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="consultations">Consultations</TabsTrigger>
           <TabsTrigger value="users">User Analysis</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="geography">Geographic</TabsTrigger>
+          <TabsTrigger value="geography" className="relative">
+            Geography
+            {/* Highlight badge for geographic data */}
+            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -559,9 +580,14 @@ const Dashboard = () => {
                     <Map className="h-5 w-5 mr-2 text-primary" />
                     {viewMode === "country" ? "Country Distribution" : `${selectedCountry} - State/Province Distribution`}
                   </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {viewMode === "country" 
+                      ? "Click on any country to view state/province breakdown" 
+                      : `Viewing detailed breakdown for ${selectedCountry}`}
+                  </p>
                 </div>
                 {viewMode === "state" && (
-                  <Button variant="ghost" size="sm" onClick={handleBackToCountries} className="flex items-center">
+                  <Button variant="outline" size="sm" onClick={handleBackToCountries} className="flex items-center">
                     <Globe className="h-4 w-4 mr-1" />
                     Back to Countries
                   </Button>
@@ -589,7 +615,23 @@ const Dashboard = () => {
                       />
                       <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
                       <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                      <Tooltip />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-4 border rounded-md shadow-md">
+                                <p className="font-bold">{data.name}</p>
+                                <p>Active Users: {data.users}</p>
+                                <p>Growth Rate: {data.growth}%</p>
+                                <p>Available for Chat: {data.available}</p>
+                                <div className="mt-2 text-xs text-primary">Click to view details</div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
                       <Legend />
                       <Bar 
                         yAxisId="left" 
@@ -608,11 +650,73 @@ const Dashboard = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                {viewMode === "country" && (
-                  <p className="text-sm text-muted-foreground mt-4 text-center">
-                    Click on any country bar to view state/province breakdown
-                  </p>
-                )}
+                
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {getCurrentGeoData().map((region) => (
+                    <Card key={region.name} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <CardHeader className="p-4 bg-primary/5">
+                        <CardTitle className="text-lg">{region.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Active Users:</span>
+                            <span className="font-medium">{region.users}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Growth Rate:</span>
+                            <span className="font-medium text-green-600">{region.growth}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Available for Chat:</span>
+                            <span className="font-medium text-blue-600">{region.available}</span>
+                          </div>
+                          
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="w-full mt-2">
+                                View Details
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>{region.name} Details</DialogTitle>
+                                <DialogDescription>
+                                  Detailed analytics and available chat rooms
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="bg-muted p-4 rounded-md">
+                                    <h4 className="font-medium mb-2">Active Sessions</h4>
+                                    <p className="text-2xl font-bold">{region.sessions}</p>
+                                  </div>
+                                  <div className="bg-muted p-4 rounded-md">
+                                    <h4 className="font-medium mb-2">Available Users</h4>
+                                    <p className="text-2xl font-bold">{region.available}</p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium mb-2">Chat Availability</h4>
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>{region.available} users available now</span>
+                                  </div>
+                                </div>
+                                <Button 
+                                  className="w-full" 
+                                  onClick={() => handleJoinRoom(region.name)}
+                                >
+                                  Join Room
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
 
@@ -643,6 +747,7 @@ const Dashboard = () => {
                           ))}
                         </Pie>
                         <Tooltip formatter={(value) => [`${value} sessions`, 'Activity']} />
+                        <Legend />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -652,33 +757,96 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <TrendingUp className="h-5 w-5 mr-2 text-primary" />
-                    Regional Growth Comparison
+                    <Users className="h-5 w-5 mr-2 text-primary" />
+                    Available Chat Participants
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
+                      <BarChart
+                        layout="vertical"
                         data={getCurrentGeoData()}
-                        margin={{
-                          top: 5,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" width={100} />
                         <Tooltip />
-                        <Line type="monotone" dataKey="growth" stroke="#8884d8" activeDot={{ r: 8 }} />
-                      </LineChart>
+                        <Bar dataKey="available" fill="#3b82f6" name="Available Users" />
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Info className="h-5 w-5 mr-2 text-primary" />
+                  Regional IT Infrastructure
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-5 w-5 text-green-500" />
+                    <span className="font-medium">Globally Distributed Cloud Architecture</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Our infrastructure is deployed across multiple regions to ensure low-latency access and 
+                    compliance with local data regulations.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-medium mb-2">Data Centers</h3>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          North America (US East, US West, Canada)
+                        </li>
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Europe (UK, Germany, France)
+                        </li>
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Asia Pacific (Japan, Australia, India)
+                        </li>
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          South America (Brazil)
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-medium mb-2">Access Controls</h3>
+                      <ul className="space-y-2 text-sm">
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Geo-specific access restrictions
+                        </li>
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Regional compliance enforcement
+                        </li>
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Multi-factor authentication by region
+                        </li>
+                        <li className="flex items-center">
+                          <Check className="h-4 w-4 text-green-500 mr-2" />
+                          Localized content delivery systems
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
