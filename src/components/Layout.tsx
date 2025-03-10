@@ -33,7 +33,7 @@ const Layout = ({ children }: LayoutProps) => {
     { path: "/", label: "Home", icon: <Home className="w-4 h-4 mr-2" /> },
     { path: "/dashboard", label: "Dashboard", icon: <BarChart2 className="w-4 h-4 mr-2" /> },
     { path: "/analyzer", label: "Analyzer", icon: <LineChart className="w-4 h-4 mr-2" /> },
-    { path: "/mentor-finder", label: "Find Mentors", icon: <MapPin className="w-4 h-4 mr-2" /> },
+    { path: "/find-mentors", label: "Find Mentors", icon: <MapPin className="w-4 h-4 mr-2" /> },
     { path: "/regular-services", label: "Services", icon: <Activity className="w-4 h-4 mr-2" /> },
     { path: "/secure-connect", label: "SecureConnect", icon: <Shield className="w-4 h-4 mr-2" /> },
     { path: "/about", label: "About", icon: <Info className="w-4 h-4 mr-2" /> },

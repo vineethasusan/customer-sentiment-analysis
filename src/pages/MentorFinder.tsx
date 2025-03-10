@@ -190,7 +190,7 @@ const MentorFinder = () => {
   const [selectedContinent, setSelectedContinent] = useState<string>("");
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedProvince, setSelectedProvince] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedMentor, setSelectedMentor] = useState<any>(null);
 
@@ -207,7 +207,7 @@ const MentorFinder = () => {
 
   const filteredMentors = selectedProvince 
     ? mentorsByProvince[selectedProvince]?.filter(mentor => 
-        (!selectedCategory || mentor.category === selectedCategory) &&
+        (selectedCategory === "all" || mentor.category === selectedCategory) &&
         (!searchQuery || 
           mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           mentor.specialties.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -335,7 +335,7 @@ const MentorFinder = () => {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {mentorCategories.map(category => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -364,7 +364,7 @@ const MentorFinder = () => {
             <Button 
               variant="outline" 
               onClick={() => {
-                setSelectedCategory("");
+                setSelectedCategory("all");
                 setSearchQuery("");
               }}
               className="w-full"
