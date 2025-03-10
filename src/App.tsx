@@ -11,6 +11,8 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/Layout";
 import SecureConnect from "./pages/SecureConnect";
+import MentorFinder from "./pages/MentorFinder";
+import RegularServices from "./pages/RegularServices";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/analyzer" element={<Layout><Analyzer /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
           <Route path="/secure-connect" element={<Layout><SecureConnect /></Layout>} />
+          <Route path="/mentor-finder" element={<Layout><MentorFinder /></Layout>} />
+          <Route path="/regular-services" element={<Layout><RegularServices /></Layout>} />
           <Route path="*" element={<Layout><NotFound /></Layout>} />
         </Routes>
       </BrowserRouter>

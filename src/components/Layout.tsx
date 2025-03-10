@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { ChevronRight, BarChart2, LineChart, Home, Info, Menu, X, Shield } from "lucide-react";
+import { ChevronRight, BarChart2, LineChart, Home, Info, Menu, X, Shield, MapPin, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -33,6 +33,8 @@ const Layout = ({ children }: LayoutProps) => {
     { path: "/", label: "Home", icon: <Home className="w-4 h-4 mr-2" /> },
     { path: "/dashboard", label: "Dashboard", icon: <BarChart2 className="w-4 h-4 mr-2" /> },
     { path: "/analyzer", label: "Analyzer", icon: <LineChart className="w-4 h-4 mr-2" /> },
+    { path: "/mentor-finder", label: "Find Mentors", icon: <MapPin className="w-4 h-4 mr-2" /> },
+    { path: "/regular-services", label: "Services", icon: <Activity className="w-4 h-4 mr-2" /> },
     { path: "/secure-connect", label: "SecureConnect", icon: <Shield className="w-4 h-4 mr-2" /> },
     { path: "/about", label: "About", icon: <Info className="w-4 h-4 mr-2" /> },
   ];
